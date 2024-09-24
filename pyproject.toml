@@ -1,0 +1,31 @@
+[project]
+name = "antithesis-sdk"
+version = "0.1.0"
+description = "Antithesis SDK for Python"
+dependencies = [
+  # "whatever",
+]
+
+
+# ; pip list
+# 
+# [project.optional-dependencies]
+# ; pip install -e .[dev]
+# dev = [
+#   "black"
+# ]
+  
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "Cython"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+always-if-reached = "assert.assertions:cmd_always_or"
+# renderhtml = "renderhtml.render:main"
+# 
+# [project.gui-scripts]
+# renderhtml="renderhtml.render:main"
+# 
+# [tool.pydeploy]
+# exclude_libs = []
+
