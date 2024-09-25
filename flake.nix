@@ -1,25 +1,24 @@
 {
   description = "Antithesis SDK build using pyproject.toml project metadata";
 
-  # inputs.pyproject-nix.url = "github:nix-community/pyproject.nix";
-  # inputs.pyproject-nix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs = {
+    nixpkgs = {
+      url = "github:nixos/nixpkgs/nixos-unstable";
+    };
 
-	inputs = {
-		nixpkgs = {
-			url = "github:nixos/nixpkgs/nixos-unstable";
-		};
+    pyproject-nix = {
+      url = "github:nix-community/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-		pyproject-nix = {
-			url = "github:nix-community/pyproject.nix";
-			inputs.nixpkgs.follows = "nixpkgs";
-		};
-	};
+    flake-compat = {
+      url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
+    };
+  };
 
   outputs =
     { nixpkgs, pyproject-nix, ... }:
     let
-      inherit (nixpkgs) lib;
-
       # Loads pyproject.toml into a high-level project representation
       # Do you notice how this is not tied to any `system` attribute or package sets?
       # That is because `project` refers to a pure data representation.
@@ -48,19 +47,19 @@
     in
     {
       # Create a development shell containing dependencies from `pyproject.toml`
-      devShells.x86_64-linux.default =
+      devShells.${pkgs.system}.default =
         let
           # Returns a function that can be passed to `python.withPackages`
           arg = project.renderers.withPackages { 
-						inherit python; 
-						extraPackages = (ps: with ps; [
-							build
-							mypy
-							pip
-							pytest
-							black
-						]);
-					};
+            inherit python; 
+            extraPackages = (ps: with ps; [
+              build
+              mypy
+              pip
+              pytest
+              black
+            ]);
+          };
 
           # Returns a wrapped environment (virtualenv like) with all our packages
           pythonEnv = python.withPackages arg;
@@ -70,7 +69,7 @@
         pkgs.mkShell { packages = [ pythonEnv ]; };
 
       # Build our package using `buildPythonPackage
-      packages.x86_64-linux.default =
+      packages.${pkgs.system}.default =
         let
           # Returns an attribute set that can be passed to `buildPythonPackage`.
           attrs = project.renderers.buildPythonPackage { inherit python; };
