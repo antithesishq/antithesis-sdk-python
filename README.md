@@ -23,6 +23,10 @@ To evaluate with type hints:
 
 		$ mypy src
 
+To perform linting:
+
+    $ pylint src/*.py
+
 To build:
 
     $ python -m build

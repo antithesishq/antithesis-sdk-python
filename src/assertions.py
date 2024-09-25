@@ -1,28 +1,42 @@
-from enum import StrEnum
-from typing import Any, Mapping, Union, Dict
-from inspect import currentframe, getframeinfo, Traceback, stack
+"""Basic Assertions
+
+This module provides functions for basic assertions:
+    * always
+    * always_or_unreachable
+    * sometimes
+    * reachable
+    * unreachable
+
+"""
+
+from typing import Any, Mapping
+from inspect import stack
+import sys
 
 from assertinfo import AssertInfo, AssertionDisplay, AssertType
 from location import LocationInfo
 from tracking import assert_tracker, get_tracker_entry
 
-was_hit = True
-must_be_hit = True
-optionally_hit = False
-expecting_true = True
+WAS_HIT = True  # Assertion was reached at runtime
+MUST_BE_HIT = True  # Assertion must be reached at least once
+OPTIONALLY_HIT = False  # Assertion may or may not be reachable
+EXPECTING_TRUE = True  # Assertion condition should be True
 
-universal_test = AssertType.ALWAYS
-existential_test = AssertType.SOMETIMES
-reachability_test = AssertType.REACHABILITY
+UNIVERSAL_TEST = AssertType.ALWAYS  # Assertion condition must always be True
+EXISTENTIAL_TEST = (
+    AssertType.SOMETIMES
+)  # Assertion condition must be True at least once
+REACHABILITY_TEST = AssertType.REACHABILITY  # Assertion is for reachability only
 
 
-def emit_assert(ai: AssertInfo) -> None:
-    if ai.hit:
-        print("HIT: %s" % ai)
+def emit_assert(assert_info: AssertInfo) -> None:
+    if assert_info.hit:
+        print(f"HIT: {assert_info}")
     else:
-        print("REG: %s" % ai)
+        print(f"REG: {assert_info}")
 
 
+# pylint: disable=too-many-arguments
 def assert_impl(
     cond: bool,
     message: str,
@@ -32,9 +46,11 @@ def assert_impl(
     must_hit: bool,
     assert_type: str,
     display_type: str,
-    id: str,
+    assert_id: str,
 ):
-    tracker_entry = get_tracker_entry(assert_tracker, id, loc.filename, loc.classname)
+    tracker_entry = get_tracker_entry(
+        assert_tracker, assert_id, loc.filename, loc.classname
+    )
 
     # Always grab the filename and classname captured when the tracker_entry was established
     # This provides the consistency needed between instrumentation-time and runtime
@@ -44,25 +60,25 @@ def assert_impl(
     if loc.classname != tracker_entry.classname:
         loc.classname = tracker_entry.classname
 
-    ai = AssertInfo(
-        hit, must_hit, assert_type, display_type, message, cond, id, loc, details
+    assert_info = AssertInfo(
+        hit, must_hit, assert_type, display_type, message, cond, assert_id, loc, details
     )
 
     if not hit:
-        emit_assert(ai)
+        emit_assert(assert_info)
         return
 
     if cond:
         tracker_entry.inc_passes()
         if tracker_entry.passes == 1:
-            emit_assert(ai)
+            emit_assert(assert_info)
     else:
-        tracker_entry.inc_fails()
-        if tracker_entry.fails == 1:
-            emit_assert(ai)
+        tracker_entry.inc_fassert_infols()
+        if tracker_entry.fassert_infols == 1:
+            emit_assert(assert_info)
 
 
-def makeKey(message: str, loc_info: LocationInfo) -> str:
+def make_key(message: str, _loc_info: LocationInfo) -> str:
     return message
 
 
@@ -72,17 +88,17 @@ def always_or_unreachable(
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
-    id = makeKey(message, location_info)
+    assert_id = make_key(message, location_info)
     assert_impl(
         condition,
         message,
         details,
         location_info,
-        was_hit,
-        optionally_hit,
-        universal_test,
+        WAS_HIT,
+        OPTIONALLY_HIT,
+        UNIVERSAL_TEST,
         AssertionDisplay.ALWAYS_OR_UNREACHABLE_DISPLAY,
-        id,
+        assert_id,
     )
 
 
@@ -90,37 +106,32 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
-    id = makeKey(message, location_info)
+    assert_id = make_key(message, location_info)
     assert_impl(
         condition,
         message,
         details,
         location_info,
-        was_hit,
-        must_be_hit,
-        existential_test,
+        WAS_HIT,
+        MUST_BE_HIT,
+        EXISTENTIAL_TEST,
         AssertionDisplay.SOMETIMES_DISPLAY,
-        id,
+        assert_id,
     )
 
 
 # ----------------------------------------------------------------------
 # For project.scripts support
 # ----------------------------------------------------------------------
-import sys
 
 
 def cmd_always():
     num_args = len(sys.argv)
     if num_args >= 3:
         message = (sys.argv[1]).strip()
-        cond_text = (sys.argv[1]).strip().lower()
         for i in range(2, num_args):
             arg = sys.argv[i].lower()
-            if arg == "t":
-                condition = True
-            else:
-                condition = False
+            condition = bool(arg == "t")
             always_or_unreachable(condition, message, {})
 
 
@@ -128,13 +139,9 @@ def cmd_sometimes():
     num_args = len(sys.argv)
     if num_args >= 3:
         message = (sys.argv[1]).strip()
-        cond_text = (sys.argv[1]).strip().lower()
         for i in range(2, num_args):
             arg = sys.argv[i].lower()
-            if arg == "t":
-                condition = True
-            else:
-                condition = False
+            condition = bool(arg == "t")
             sometimes(condition, message, {})
 
 
@@ -152,7 +159,7 @@ def add():
             num2 = int(maybe_num2)
 
     the_sum = num1 + num2
-    print("Adding: %d + %d => %d" % (num1, num2, the_sum))
+    print(f"Adding: {num1} + {num2} => {the_sum}")
 
 
 def sub():
@@ -169,4 +176,4 @@ def sub():
             num2 = int(maybe_num2)
 
     the_diff = num1 - num2
-    print("Subtracting: %d - %d => %d" % (num1, num2, the_diff))
+    print(f"Subtracting: {num1} - {num2} => {the_diff}")
