@@ -5,10 +5,6 @@ description = "Antithesis SDK for Python"
 dependencies = [
     # "whatever",
 ]
-# [project.optional-dependencies]
-# dev = [
-#   "black"
-# ]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel", "Cython"]
