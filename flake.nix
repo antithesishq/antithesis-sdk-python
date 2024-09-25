@@ -47,13 +47,6 @@
 
     in
     {
-			# python37.withPackages (ps: with ps; [
-  		# 	matplotlib
-  		# 	spacy
-  		# 	...
-  		# 	colormath
-			# ])
-
       # Create a development shell containing dependencies from `pyproject.toml`
       devShells.x86_64-linux.default =
         let

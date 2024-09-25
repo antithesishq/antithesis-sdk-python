@@ -1,23 +1,31 @@
-from typing import Union
+from typing import Union, Any
 from inspect import FrameInfo
 
 
+def get_class_name(frame_info: Any) -> str:
+    try:
+        class_name = frame_info.f_locals["self"].__class__.__name__
+    except Exception:
+        class_name = "?class"
+    return class_name
+
+
 class LocationInfo:
-    def __init__(self, tbk: Union[FrameInfo, None]) -> None:
+    def __init__(self, frame_info: Union[FrameInfo, None]) -> None:
         self._filename = "filename"
         self._begin_line = 0
         self._begin_col = 0
         self._function = "function"
         self._class = "class"
-        if tbk is None:
+        if frame_info is None:
             print("LocInfo not available")
             return
-        # print("filename: '%s'  lineno: '%d'  function: '%s'" % (tbk.filename, tbk.lineno, tbk.function))
-        self._filename = tbk.filename
-        self._begin_line = tbk.lineno
+        # print("filename: '%s'  lineno: '%d'  function: '%s'" % (frame_info.filename, frame_info.lineno, frame_info.function))
+        self._filename = frame_info.filename
+        self._begin_line = frame_info.lineno
         self._begin_col = 0
-        self._function = tbk.function
-        self._class = "?c_lass"
+        self._function = frame_info.function
+        self._class = get_class_name(frame_info.frame)
 
     @property
     def classname(self) -> str:
