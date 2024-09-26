@@ -18,8 +18,9 @@ def _get_class_name(frame_info: Any) -> str:
     return class_name
 
 
+#pylint: disable=too-many-instance-attributes
 class LocationInfo:
-    """Used to contain source code info obatined from assertion callers.
+    """Used to contain source code info obtained from assertion callers.
 
     Attributes:
         _filename (str): The name of the source file containing the called assertion
@@ -75,12 +76,24 @@ class LocationInfo:
         """str: The name of the function containing the called assertion"""
         return self._function
 
+    @function.setter
+    def function(self, value: str) -> None:
+        self._function = value
+
     @property
     def begin_line(self) -> int:
         """int: The line number for the called assertion"""
         return self._begin_line
 
+    @begin_line.setter
+    def begin_line(self, value: int) -> None:
+        self._begin_line = value
+
     @property
     def begin_col(self) -> int:
         """int: The column number for the called assertion"""
         return self._begin_col
+
+    @begin_col.setter
+    def begin_col(self, value: int) -> None:
+        self._begin_col = value

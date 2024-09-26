@@ -12,7 +12,7 @@ from typing import Any, Mapping
 from inspect import stack
 import sys
 
-from assertinfo import AssertInfo, AssertionDisplay, AssertType
+from assertinfo import AssertInfo, AssertionDisplay
 from location import LocationInfo
 from tracking import assert_tracker, get_tracker_entry
 
@@ -20,12 +20,6 @@ WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
 OPTIONALLY_HIT = False  # Assertion may or may not be reachable
 EXPECTING_TRUE = True  # Assertion condition should be True
-
-UNIVERSAL_TEST = AssertType.ALWAYS  # Assertion condition must always be True
-EXISTENTIAL_TEST = (
-    AssertType.SOMETIMES
-)  # Assertion condition must be True at least once
-REACHABILITY_TEST = AssertType.REACHABILITY  # Assertion is for reachability only
 
 
 def emit_assert(assert_info: AssertInfo) -> None:
@@ -57,15 +51,15 @@ def assert_impl(
     to the configured handler.
 
     Args:
-    cond (bool): Runtime condition for the basic assertion
-    message (str): Unique message associated with a basic assertion
-    details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
-    loc_info (LocationInfo): Caller information for the basic assertion (runtime and catalog)
-    hit (bool): True for runtime assertions, False if from an Assertion Catalog
-    must_hit (bool): True if assertion must be hit at runtime
-    assert_type (AssertType): Logical handling type for a basic assertion
-    display_type (AssertionDisplay): Human readable name for a basic assertion
-    assert_id (str): Unique id for the basic assertion
+        cond (bool): Runtime condition for the basic assertion
+        message (str): Unique message associated with a basic assertion
+        details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
+        loc_info (LocationInfo): Caller information for the basic assertion (runtime and catalog)
+        hit (bool): True for runtime assertions, False if from an Assertion Catalog
+        must_hit (bool): True if assertion must be hit at runtime
+        assert_type (AssertType): Logical handling type for a basic assertion
+        display_type (AssertionDisplay): Human readable name for a basic assertion
+        assert_id (str): Unique id for the basic assertion
     """
     tracker_entry = get_tracker_entry(
         assert_tracker, assert_id, loc_info.filename, loc_info.classname
@@ -127,15 +121,17 @@ def always_or_unreachable(
     viewable in the “Antithesis SDK: Always” group of your triage
     report.
 
-        Args:
-            condition (bool): Indicates if the assertion is true
-            message (str): The unique message associated with the assertion
-            details (Mapping[str, Any]): Named details associated with the assertion
+    Args:
+        condition (bool): Indicates if the assertion is true
+        message (str): The unique message associated with the assertion
+        details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
     assert_id = make_key(message, location_info)
+    display_type = AssertionDisplay.ALWAYS_OR_UNREACHABLE
+    assert_type = display_type.assert_type()
     assert_impl(
         condition,
         message,
@@ -143,8 +139,8 @@ def always_or_unreachable(
         location_info,
         WAS_HIT,
         OPTIONALLY_HIT,
-        UNIVERSAL_TEST,
-        AssertionDisplay.ALWAYS_OR_UNREACHABLE_DISPLAY,
+        assert_type,
+        display_type,
         assert_id,
     )
 
@@ -155,15 +151,17 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
     will therefore fail.) This test property will be viewable in the
     “Antithesis SDK: Sometimes” group.
 
-        Args:
-            condition (bool): Indicates if the assertion is true
-            message (str): The unique message associated with the assertion
-            details (Mapping[str, Any]): Named details associated with the assertion
+    Args:
+        condition (bool): Indicates if the assertion is true
+        message (str): The unique message associated with the assertion
+        details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
     assert_id = make_key(message, location_info)
+    display_type = AssertionDisplay.SOMETIMES
+    assert_type = display_type.assert_type()
     assert_impl(
         condition,
         message,
@@ -171,11 +169,64 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
         location_info,
         WAS_HIT,
         MUST_BE_HIT,
-        EXISTENTIAL_TEST,
-        AssertionDisplay.SOMETIMES_DISPLAY,
+        assert_type,
+        display_type,
         assert_id,
     )
 
+# pylint: disable=too-many-arguments
+def assert_raw(
+    condition: bool,
+    message: str,
+    details: Mapping[str, Any],
+    loc_filename: str,
+    loc_function: str,
+    loc_class: str,
+    loc_begin_line: int,
+    loc_begin_col: int,
+    hit: bool,
+    must_hit: bool,
+    assert_type: str,
+    display_type: str,
+    assert_id: str,
+):
+    """For adapter use.  Composes, tracks and emits assertions that should be forwarded
+    to the configured handler.
+
+    Args:
+        condition (bool): Runtime condition for the basic assertion
+        message (str): Unique message associated with a basic assertion
+        details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
+        loc_filename (str): The name of the source file containing the called assertion
+        loc_function (str): The name of the function containing the called assertion
+        loc_class (str): The name of the class for the function containing the called assertion
+        loc_begin_line (int): The line number for the called assertion
+        loc_begin_col (int): The column number for the called assertion
+        hit (bool): True for runtime assertions, False if from an Assertion Catalog
+        must_hit (bool): True if assertion must be hit at runtime
+        assert_type (str): Logical handling type for a basic assertion
+        display_type (str): Human readable name for a basic assertion
+        assert_id (str): Unique id for the basic assertion
+    """
+
+    loc_info = LocationInfo(None)
+    loc_info.classname = loc_class
+    loc_info.filename = loc_filename
+    loc_info.function = loc_function
+    loc_info.begin_line = loc_begin_line
+    loc_info.begin_col = loc_begin_col
+
+    assert_impl(
+        condition,
+        message,
+        details,
+        loc_info,
+        hit,
+        must_hit,
+        assert_type,
+        display_type,
+        assert_id,
+    )
 
 # ----------------------------------------------------------------------
 # For project.scripts support
@@ -183,8 +234,14 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
 
 
 def cmd_always():
-    """Smoke-test for always_or_unreachable.  Example usage
-    $ always "this always works" t t f t f
+    """Smoke-test for always_or_unreachable.
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ always "this always works" t t f t f
+        HIT: AlwaysOrUnreachable 'this always works' => True
+        HIT: AlwaysOrUnreachable 'this always works' => False
     """
     num_args = len(sys.argv)
     if num_args >= 3:
@@ -196,8 +253,14 @@ def cmd_always():
 
 
 def cmd_sometimes():
-    """Smoke-test for sometimes.  Example usage
-    $ sometimes "this works at least once" t t f t f
+    """Smoke-test for sometimes.
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ sometimes "this works at least once" t t f t f
+        HIT: Sometimes 'this works at least once' => True
+        HIT: Sometimes 'this works at least once' => False
     """
     num_args = len(sys.argv)
     if num_args >= 3:

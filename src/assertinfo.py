@@ -21,11 +21,27 @@ class AssertType(StrEnum):
 class AssertionDisplay(StrEnum):
     """Used to provide human readable names for basic assertions"""
 
-    ALWAYS_DISPLAY = "Always"
-    ALWAYS_OR_UNREACHABLE_DISPLAY = "AlwaysOrUnreachable"
-    SOMETIMES_DISPLAY = "Sometimes"
-    REACHABLE_DISPLAY = "Reachable"
-    UNREACHABLE_DISPLAY = "Unreachable"
+    ALWAYS = "Always"
+    ALWAYS_OR_UNREACHABLE = "AlwaysOrUnreachable"
+    SOMETIMES = "Sometimes"
+    REACHABLE = "Reachable"
+    UNREACHABLE = "Unreachable"
+
+    def assert_type(self) -> AssertType:
+        """Provides the AssertType for the AssertionDisplay value
+
+        Returns:
+            (AssertType): The AssertType for the AssertionDisplay value
+        """
+        the_assert_type = AssertType.REACHABILITY
+        match self:
+            case AssertionDisplay.ALWAYS | AssertionDisplay.ALWAYS_OR_UNREACHABLE:
+                the_assert_type = AssertType.ALWAYS
+            case AssertionDisplay.SOMETIMES:
+                the_assert_type = AssertType.SOMETIMES
+            case AssertionDisplay.REACHABLE | AssertionDisplay.UNREACHABLE:
+                the_assert_type = AssertType.REACHABILITY
+        return the_assert_type
 
 
 # pylint: disable=too-many-instance-attributes
@@ -35,8 +51,8 @@ class AssertInfo:
     Attributes:
         _hit (bool): True for runtime assertions, False if from an Assertion Catalog
         _must_hit (bool): True if assertion must be hit at runtime
-        _assert_type (AssertType): Logical handling type for a basic assertion
-        _display_type (AssertionDisplay): Human readable name for a basic assertion
+        _assert_type (str): Logical handling type for a basic assertion
+        _display_type (str): Human readable name for a basic assertion
         _message (str): Unique message associated with a basic assertion
         _cond (bool): Runtime condition for the basic assertion
         _id (str): Unique id for the basic assertion
