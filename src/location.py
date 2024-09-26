@@ -18,7 +18,7 @@ def _get_class_name(frame_info: Any) -> str:
     return class_name
 
 
-#pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 class LocationInfo:
     """Used to contain source code info obtained from assertion callers.
 

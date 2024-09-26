@@ -6,6 +6,15 @@ dependencies = [
     # "whatever",
 ]
 
+[tool.black]
+verbose = true
+
+[tool.mypy]
+files = "src/*.py"
+
+#[tool.pylint.messages_control]
+# disable = "C0114,C0115,C0116"
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"

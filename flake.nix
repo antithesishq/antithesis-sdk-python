@@ -58,6 +58,7 @@
               mypy
               pdoc
               pip
+              pylint
               pytest
             ]);
           };

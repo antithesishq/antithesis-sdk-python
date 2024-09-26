@@ -18,15 +18,15 @@ Tools installed includes:
 
 To format source:
 
-		$ black [-v] [--check] .
+		$ black [--check] src
 
 To evaluate with type hints:
 
-		$ mypy src
+		$ mypy
 
 To perform linting:
 
-    $ pylint src/*.py
+    $ pylint src
 
 To build distributions:
 

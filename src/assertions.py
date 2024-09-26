@@ -174,6 +174,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
         assert_id,
     )
 
+
 # pylint: disable=too-many-arguments
 def assert_raw(
     condition: bool,
@@ -227,6 +228,7 @@ def assert_raw(
         display_type,
         assert_id,
     )
+
 
 # ----------------------------------------------------------------------
 # For project.scripts support
