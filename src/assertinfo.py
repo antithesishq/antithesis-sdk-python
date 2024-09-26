@@ -6,8 +6,8 @@ the details for basic assertions.
 """
 
 from enum import StrEnum
-from typing import Any, Mapping
-from location import LocationInfo
+from typing import Any, Mapping, Union, Dict
+from location import get_location_info
 
 
 class AssertType(StrEnum):
@@ -56,7 +56,7 @@ class AssertInfo:
         _message (str): Unique message associated with a basic assertion
         _cond (bool): Runtime condition for the basic assertion
         _id (str): Unique id for the basic assertion
-        _loc_info (LocationInfo): Caller information for the basic assertion (runtime and catalog)
+        _loc_info (Dict[str, Union[str, int]]): Caller information for the basic assertion (runtime and catalog)
         _details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
 
     """
@@ -71,7 +71,7 @@ class AssertInfo:
         message: str,
         cond: bool,
         assert_id: str,
-        loc_info: LocationInfo,
+        loc_info: Dict[str, Union[str, int]],
         details: Mapping[str, Any],
     ) -> None:
         self._hit = hit
@@ -120,8 +120,8 @@ class AssertInfo:
         return self._id
 
     @property
-    def loc_info(self) -> LocationInfo:
-        """LocationInfo: Basic Assertion caller information (runtime and catalog)"""
+    def loc_info(self) -> Dict[str, Union[str, int]]:
+        """Dict[str, Union[str, int]]: Basic Assertion caller information (runtime and catalog)"""
         return self._loc_info
 
     @property

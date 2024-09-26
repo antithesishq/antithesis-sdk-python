@@ -8,12 +8,12 @@ This module provides functions for basic assertions:
     * unreachable
 """
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Union, Dict, cast
 from inspect import stack
 import sys
 
 from assertinfo import AssertInfo, AssertionDisplay
-from location import LocationInfo
+from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
 
 WAS_HIT = True  # Assertion was reached at runtime
@@ -40,7 +40,7 @@ def assert_impl(
     cond: bool,
     message: str,
     details: Mapping[str, Any],
-    loc_info: LocationInfo,
+    loc_info: Dict[str, Union[str, int]],
     hit: bool,
     must_hit: bool,
     assert_type: str,
@@ -54,24 +54,24 @@ def assert_impl(
         cond (bool): Runtime condition for the basic assertion
         message (str): Unique message associated with a basic assertion
         details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
-        loc_info (LocationInfo): Caller information for the basic assertion (runtime and catalog)
+        loc_info (Dict[str, Union[str, int]]): Caller information for the basic assertion (runtime and catalog)
         hit (bool): True for runtime assertions, False if from an Assertion Catalog
         must_hit (bool): True if assertion must be hit at runtime
         assert_type (AssertType): Logical handling type for a basic assertion
         display_type (AssertionDisplay): Human readable name for a basic assertion
         assert_id (str): Unique id for the basic assertion
     """
-    tracker_entry = get_tracker_entry(
-        assert_tracker, assert_id, loc_info.filename, loc_info.classname
-    )
+    filename = cast(str, loc_info.get("filename", ""))
+    classname = cast(str, loc_info.get("class", ""))
+    tracker_entry = get_tracker_entry(assert_tracker, assert_id, filename, classname)
 
     # Always grab the filename and classname captured when the tracker_entry was established
     # This provides the consistency needed between instrumentation-time and runtime
-    if loc_info.filename != tracker_entry.filename:
-        loc_info.filename = tracker_entry.filename
+    if filename != tracker_entry.filename:
+        loc_info["filename"] = tracker_entry.filename
 
-    if loc_info.classname != tracker_entry.classname:
-        loc_info.classname = tracker_entry.classname
+    if classname != tracker_entry.classname:
+        loc_info["class"] = tracker_entry.classname
 
     assert_info = AssertInfo(
         hit,
@@ -99,12 +99,12 @@ def assert_impl(
             emit_assert(assert_info)
 
 
-def make_key(message: str, _loc_info: LocationInfo) -> str:
+def make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
     """Composes a tracker lookup key.
 
     Args:
         message (str): The text for a basic assertion
-        _loc_info (LocationInfo): The location infor for a basic assertion
+        _loc_info (Dict[str, Union[str, int]]): The location infor for a basic assertion
 
     Returns:
         The tracker lookup key
@@ -128,7 +128,7 @@ def always_or_unreachable(
     """
     all_frames = stack()
     this_frame = all_frames[1]
-    location_info = LocationInfo(this_frame)
+    location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
     display_type = AssertionDisplay.ALWAYS_OR_UNREACHABLE
     assert_type = display_type.assert_type()
@@ -158,7 +158,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
     """
     all_frames = stack()
     this_frame = all_frames[1]
-    location_info = LocationInfo(this_frame)
+    location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
     display_type = AssertionDisplay.SOMETIMES
     assert_type = display_type.assert_type()
@@ -210,12 +210,16 @@ def assert_raw(
         assert_id (str): Unique id for the basic assertion
     """
 
-    loc_info = LocationInfo(None)
-    loc_info.classname = loc_class
-    loc_info.filename = loc_filename
-    loc_info.function = loc_function
-    loc_info.begin_line = loc_begin_line
-    loc_info.begin_column = loc_begin_column
+    loc_info = cast(
+        Dict[str, Union[str, int]],
+        {
+            "filename": loc_filename,
+            "function": loc_function,
+            "class": loc_class,
+            "begin_line": loc_begin_line,
+            "begin_column": loc_begin_column,
+        },
+    )
 
     assert_impl(
         condition,

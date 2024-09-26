@@ -2,7 +2,7 @@ import pytest
 import json
 from inspect import stack
 
-from location import LocationInfo
+from location import get_location_info
 
 @pytest.fixture
 def simple_details():
@@ -18,9 +18,8 @@ def test_simple(simple_details):
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]
-    return LocationInfo(this_frame)
+    return get_location_info(this_frame)
 
 def test_location_to_json(location_example):
-    jx = location_example.to_json()
-    assert not jx is None
-
+    loc_info = json.dumps(location_example)
+    assert not loc_info is None
