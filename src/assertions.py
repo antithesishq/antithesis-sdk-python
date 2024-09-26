@@ -6,7 +6,6 @@ This module provides functions for basic assertions:
     * sometimes
     * reachable
     * unreachable
-
 """
 
 from typing import Any, Mapping
@@ -30,6 +29,12 @@ REACHABILITY_TEST = AssertType.REACHABILITY  # Assertion is for reachability onl
 
 
 def emit_assert(assert_info: AssertInfo) -> None:
+    """Formats and forwards the assertion provided to the
+    presently configured handler.
+
+    Args:
+        assert_info (AssertInfo): The internal representation for a Basic Assertion
+    """
     if assert_info.hit:
         print(f"HIT: {assert_info}")
     else:
@@ -41,27 +46,49 @@ def assert_impl(
     cond: bool,
     message: str,
     details: Mapping[str, Any],
-    loc: LocationInfo,
+    loc_info: LocationInfo,
     hit: bool,
     must_hit: bool,
     assert_type: str,
     display_type: str,
     assert_id: str,
 ):
+    """Composes, tracks and emits assertions that should be forwarded
+    to the configured handler.
+
+    Args:
+    cond (bool): Runtime condition for the basic assertion
+    message (str): Unique message associated with a basic assertion
+    details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
+    loc_info (LocationInfo): Caller information for the basic assertion (runtime and catalog)
+    hit (bool): True for runtime assertions, False if from an Assertion Catalog
+    must_hit (bool): True if assertion must be hit at runtime
+    assert_type (AssertType): Logical handling type for a basic assertion
+    display_type (AssertionDisplay): Human readable name for a basic assertion
+    assert_id (str): Unique id for the basic assertion
+    """
     tracker_entry = get_tracker_entry(
-        assert_tracker, assert_id, loc.filename, loc.classname
+        assert_tracker, assert_id, loc_info.filename, loc_info.classname
     )
 
     # Always grab the filename and classname captured when the tracker_entry was established
     # This provides the consistency needed between instrumentation-time and runtime
-    if loc.filename != tracker_entry.filename:
-        loc.filename = tracker_entry.filename
+    if loc_info.filename != tracker_entry.filename:
+        loc_info.filename = tracker_entry.filename
 
-    if loc.classname != tracker_entry.classname:
-        loc.classname = tracker_entry.classname
+    if loc_info.classname != tracker_entry.classname:
+        loc_info.classname = tracker_entry.classname
 
     assert_info = AssertInfo(
-        hit, must_hit, assert_type, display_type, message, cond, assert_id, loc, details
+        hit,
+        must_hit,
+        assert_type,
+        display_type,
+        message,
+        cond,
+        assert_id,
+        loc_info,
+        details,
     )
 
     if not hit:
@@ -73,18 +100,38 @@ def assert_impl(
         if tracker_entry.passes == 1:
             emit_assert(assert_info)
     else:
-        tracker_entry.inc_fassert_infols()
-        if tracker_entry.fassert_infols == 1:
+        tracker_entry.inc_fails()
+        if tracker_entry.fails == 1:
             emit_assert(assert_info)
 
 
 def make_key(message: str, _loc_info: LocationInfo) -> str:
+    """Composes a tracker lookup key.
+
+    Args:
+        message (str): The text for a basic assertion
+        _loc_info (LocationInfo): The location infor for a basic assertion
+
+    Returns:
+        The tracker lookup key
+    """
     return message
 
 
 def always_or_unreachable(
     condition: bool, message: str, details: Mapping[str, Any]
 ) -> None:
+    """Asserts that condition is true every time this function
+    is called. The corresponding test property will pass if the
+    assertion is never encountered. This test property will be
+    viewable in the “Antithesis SDK: Always” group of your triage
+    report.
+
+        Args:
+            condition (bool): Indicates if the assertion is true
+            message (str): The unique message associated with the assertion
+            details (Mapping[str, Any]): Named details associated with the assertion
+    """
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
@@ -103,6 +150,16 @@ def always_or_unreachable(
 
 
 def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None:
+    """Asserts that condition is true at least one time that this function
+    was called. (If the assertion is never encountered, the test property
+    will therefore fail.) This test property will be viewable in the
+    “Antithesis SDK: Sometimes” group.
+
+        Args:
+            condition (bool): Indicates if the assertion is true
+            message (str): The unique message associated with the assertion
+            details (Mapping[str, Any]): Named details associated with the assertion
+    """
     all_frames = stack()
     this_frame = all_frames[1]
     location_info = LocationInfo(this_frame)
@@ -126,6 +183,9 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
 
 
 def cmd_always():
+    """Smoke-test for always_or_unreachable.  Example usage
+    $ always "this always works" t t f t f
+    """
     num_args = len(sys.argv)
     if num_args >= 3:
         message = (sys.argv[1]).strip()
@@ -136,6 +196,9 @@ def cmd_always():
 
 
 def cmd_sometimes():
+    """Smoke-test for sometimes.  Example usage
+    $ sometimes "this works at least once" t t f t f
+    """
     num_args = len(sys.argv)
     if num_args >= 3:
         message = (sys.argv[1]).strip()
@@ -146,6 +209,14 @@ def cmd_sometimes():
 
 
 def add():
+    """Smoke-test for adding two integers.
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ addx 55 11
+        Adding: 55 + 11 => 66
+    """
     num1 = 0
     num2 = 0
     if len(sys.argv) > 1:
@@ -163,6 +234,14 @@ def add():
 
 
 def sub():
+    """Smoke-test for subtracting two integers.
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ subx 55 11
+        Subtracting: 55 - 11 => 44
+    """
     num1 = 0
     num2 = 0
     if len(sys.argv) > 1:

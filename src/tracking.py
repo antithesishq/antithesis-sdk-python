@@ -76,17 +76,16 @@ assert_tracker: Dict[str, TrackerInfo] = {}
 def get_tracker_entry(
     tracker: Dict[str, TrackerInfo], assert_id: str, filename: str, classname: str
 ) -> TrackerInfo:
-    """
-    Provides the TrackerInfo associated with the assert_id specified.
+    """Provides the TrackerInfo associated with the assert_id specified.
     If this is the first time the assert_id has been encountered, the
     TrackerInfo is created with the filename and classname given, and
     the pass and fail counts initialized to zero.
 
     Args:
-        tracker: (Dict[str, TrackerInfo]) The assertion tracker used to
+        tracker (Dict[str, TrackerInfo]): The assertion tracker used to
             obtain existing TrackerInfo entries, and to insert newly
             initialized TrackerInfo entries.
-        assert_id: (str) The assert_id for an assertion whose TrackerInfo
+        assert_id (str): The assert_id for an assertion whose TrackerInfo
             is to be obtained
         filename (str): The name of the source file containing the called assertion
         classname (str): The name of the class for the function containing the called assertion

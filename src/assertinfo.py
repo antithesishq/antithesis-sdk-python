@@ -70,39 +70,49 @@ class AssertInfo:
 
     @property
     def hit(self) -> bool:
+        """bool: True for runtime assertions, False if from an Assertion Catalog"""
         return self._hit
 
     @property
     def must_hit(self) -> bool:
+        """bool: True if assertion must be hit at runtime"""
         return self._must_hit
 
     @property
     def assert_type(self) -> str:
+        """str: Logical handling type for a basic assertion"""
         return self._assert_type
 
     @property
     def display_type(self) -> str:
+        """str: Human readable name for a basic assertion"""
         return self._display_type
 
     @property
     def message(self) -> str:
+        """str: Unique message associated with a basic assertion"""
         return self._message
 
     @property
     def cond(self) -> bool:
+        """bool: Runtime condition for the basic assertion"""
         return self._cond
 
     @property
     def assert_id(self) -> str:
+        """str: Unique id for the basic assertion"""
         return self._id
 
     @property
     def loc_info(self) -> LocationInfo:
+        """LocationInfo: Basic Assertion caller information (runtime and catalog)"""
         return self._loc_info
 
     @property
     def details(self) -> Mapping[str, Any]:
+        """Mapping[str, Any]: Named details associated with a basic assertion at runtime"""
         return self._details
 
     def __str__(self):
+        """str: The informal printable string representation of an AssertInfo object."""
         return f"{self.display_type} '{self.message}' => {self.cond}"
