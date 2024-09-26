@@ -10,6 +10,7 @@ This module provides functions for basic assertions:
 
 from typing import Any, Mapping, Union, Dict, cast
 from inspect import stack
+import json
 import sys
 
 from assertinfo import AssertInfo, AssertionDisplay
@@ -29,10 +30,9 @@ def emit_assert(assert_info: AssertInfo) -> None:
     Args:
         assert_info (AssertInfo): The internal representation for a Basic Assertion
     """
-    if assert_info.hit:
-        print(f"HIT: {assert_info}")
-    else:
-        print(f"REG: {assert_info}")
+
+    wrapped_assert = {"antithesis_assert": assert_info.to_dict()}
+    print(json.dumps(wrapped_assert, indent=2))
 
 
 # pylint: disable=too-many-arguments

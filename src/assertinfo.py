@@ -7,6 +7,7 @@ the details for basic assertions.
 
 from enum import StrEnum
 from typing import Any, Mapping, Union, Dict
+import json
 
 
 class AssertType(StrEnum):
@@ -53,7 +54,7 @@ class AssertInfo:
         _assert_type (str): Logical handling type for a basic assertion
         _display_type (str): Human readable name for a basic assertion
         _message (str): Unique message associated with a basic assertion
-        _cond (bool): Runtime condition for the basic assertion
+        _condition (bool): Runtime condition for the basic assertion
         _id (str): Unique id for the basic assertion
         _loc_info (Dict[str, Union[str, int]]): Caller information for the basic
             assertion (runtime and catalog)
@@ -70,7 +71,7 @@ class AssertInfo:
         assert_type: str,
         display_type: str,
         message: str,
-        cond: bool,
+        condition: bool,
         assert_id: str,
         loc_info: Dict[str, Union[str, int]],
         details: Mapping[str, Any],
@@ -80,7 +81,7 @@ class AssertInfo:
         self._assert_type = assert_type
         self._display_type = display_type
         self._message = message
-        self._cond = cond
+        self._condition = condition
         self._id = assert_id
         self._loc_info = loc_info
         self._details = details
@@ -111,9 +112,9 @@ class AssertInfo:
         return self._message
 
     @property
-    def cond(self) -> bool:
+    def condition(self) -> bool:
         """bool: Runtime condition for the basic assertion"""
-        return self._cond
+        return self._condition
 
     @property
     def assert_id(self) -> str:
@@ -131,5 +132,47 @@ class AssertInfo:
         return self._details
 
     def __str__(self):
-        """str: The informal printable string representation of an AssertInfo object."""
-        return f"{self.display_type} '{self.message}' => {self.cond}"
+        """The informal printable string representation of an AssertInfo object.
+
+        Returns:
+        (str): The informal printable string representation of an AssertInfo object.
+        """
+        return f"{self.display_type} '{self.message}' => {self.condition}"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """A dictionary representation of an AssertInfo object
+
+        Returns:
+        (Dict[str, Any]): The dictionary representation of an AssertInfo object.
+        """
+        the_dict = {
+            "condition": self.condition,
+            "must_hit": self.must_hit,
+            "hit": self.hit,
+            "id": self.assert_id,
+            "message": self.message,
+            "display_type": self.display_type,
+            "assert_type": self.assert_type,
+            "location": self.loc_info,
+            "details": self.details,
+        }
+        return the_dict
+
+    def to_json(self) -> str:
+        """The JSON representation of an AssertInfo object
+
+        Returns:
+        (str): The JSON representation of an AssertInfo object.
+        """
+        the_dict = {
+            "condition": self.condition,
+            "must_hit": self.must_hit,
+            "hit": self.hit,
+            "id": self.assert_id,
+            "message": self.message,
+            "display_type": self.display_type,
+            "assert_type": self.assert_type,
+            "location": self.loc_info,
+            "details": self.details,
+        }
+        return json.dumps(the_dict)
