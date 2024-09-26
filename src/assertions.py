@@ -53,8 +53,10 @@ def assert_impl(
     Args:
         cond (bool): Runtime condition for the basic assertion
         message (str): Unique message associated with a basic assertion
-        details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
-        loc_info (Dict[str, Union[str, int]]): Caller information for the basic assertion (runtime and catalog)
+        details (Mapping[str, Any]): Named details associated with a basic
+            assertion at runtime
+        loc_info (Dict[str, Union[str, int]]): Caller information for the basic
+            assertion (runtime and catalog)
         hit (bool): True for runtime assertions, False if from an Assertion Catalog
         must_hit (bool): True if assertion must be hit at runtime
         assert_type (AssertType): Logical handling type for a basic assertion

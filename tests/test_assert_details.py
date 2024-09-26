@@ -1,7 +1,6 @@
-import pytest
 import json
 from inspect import stack
-
+import pytest
 from location import get_location_info
 
 @pytest.fixture
@@ -22,4 +21,17 @@ def location_example():
 
 def test_location_to_json(location_example):
     loc_info = json.dumps(location_example)
-    assert not loc_info is None
+    decoded_loc_info = json.loads(loc_info)
+
+    assert 'filename' in decoded_loc_info
+    assert 'function' in decoded_loc_info
+    assert 'class' in decoded_loc_info
+    assert 'begin_line' in decoded_loc_info
+    assert 'begin_column' in decoded_loc_info
+
+    decoded_filename = decoded_loc_info['filename']
+    assert  decoded_filename == __file__
+
+    assert decoded_loc_info['function'] == 'location_example'
+    assert decoded_loc_info['class'] == ''
+    assert decoded_loc_info['begin_column'] == 0

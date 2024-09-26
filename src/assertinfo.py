@@ -7,7 +7,6 @@ the details for basic assertions.
 
 from enum import StrEnum
 from typing import Any, Mapping, Union, Dict
-from location import get_location_info
 
 
 class AssertType(StrEnum):
@@ -56,8 +55,10 @@ class AssertInfo:
         _message (str): Unique message associated with a basic assertion
         _cond (bool): Runtime condition for the basic assertion
         _id (str): Unique id for the basic assertion
-        _loc_info (Dict[str, Union[str, int]]): Caller information for the basic assertion (runtime and catalog)
-        _details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
+        _loc_info (Dict[str, Union[str, int]]): Caller information for the basic
+            assertion (runtime and catalog)
+        _details (Mapping[str, Any]): Named details associated with a basic
+            assertion at runtime
 
     """
 
