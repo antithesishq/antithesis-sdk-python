@@ -184,7 +184,7 @@ def assert_raw(
     loc_function: str,
     loc_class: str,
     loc_begin_line: int,
-    loc_begin_col: int,
+    loc_begin_column: int,
     hit: bool,
     must_hit: bool,
     assert_type: str,
@@ -202,7 +202,7 @@ def assert_raw(
         loc_function (str): The name of the function containing the called assertion
         loc_class (str): The name of the class for the function containing the called assertion
         loc_begin_line (int): The line number for the called assertion
-        loc_begin_col (int): The column number for the called assertion
+        loc_begin_column (int): The column number for the called assertion
         hit (bool): True for runtime assertions, False if from an Assertion Catalog
         must_hit (bool): True if assertion must be hit at runtime
         assert_type (str): Logical handling type for a basic assertion
@@ -215,7 +215,7 @@ def assert_raw(
     loc_info.filename = loc_filename
     loc_info.function = loc_function
     loc_info.begin_line = loc_begin_line
-    loc_info.begin_col = loc_begin_col
+    loc_info.begin_column = loc_begin_column
 
     assert_impl(
         condition,

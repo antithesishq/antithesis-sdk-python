@@ -15,6 +15,9 @@ files = "src/*.py"
 #[tool.pylint.messages_control]
 # disable = "C0114,C0115,C0116"
 
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
