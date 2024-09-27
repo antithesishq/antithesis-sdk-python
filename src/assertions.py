@@ -16,6 +16,7 @@ import sys
 from assertinfo import AssertInfo, AssertionDisplay
 from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
+from not_internal import output
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -32,7 +33,7 @@ def emit_assert(assert_info: AssertInfo) -> None:
     """
 
     wrapped_assert = {"antithesis_assert": assert_info.to_dict()}
-    print(json.dumps(wrapped_assert, indent=2))
+    output(json.dumps(wrapped_assert, indent=2))
 
 
 # pylint: disable=too-many-arguments
