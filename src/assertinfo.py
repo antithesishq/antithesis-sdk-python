@@ -7,7 +7,6 @@ the details for basic assertions.
 
 from enum import StrEnum
 from typing import Any, Mapping, Union, Dict
-import json
 
 
 class AssertType(StrEnum):
@@ -157,22 +156,3 @@ class AssertInfo:
             "details": self.details,
         }
         return the_dict
-
-    def to_json(self) -> str:
-        """The JSON representation of an AssertInfo object
-
-        Returns:
-        (str): The JSON representation of an AssertInfo object.
-        """
-        the_dict = {
-            "condition": self.condition,
-            "must_hit": self.must_hit,
-            "hit": self.hit,
-            "id": self.assert_id,
-            "message": self.message,
-            "display_type": self.display_type,
-            "assert_type": self.assert_type,
-            "location": self.loc_info,
-            "details": self.details,
-        }
-        return json.dumps(the_dict)

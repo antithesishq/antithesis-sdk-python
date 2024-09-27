@@ -49,7 +49,7 @@ def test_assertion_info_to_json(location_example, details_example):
         details_value
     )
 
-    json_assert_info = assert_info.to_json()
+    json_assert_info = json.dumps(assert_info.to_dict())
     decoded_assert_info = json.loads(json_assert_info)
 
     assert 'condition' in decoded_assert_info
