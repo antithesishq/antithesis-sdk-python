@@ -39,6 +39,8 @@ To view docs:
 
 To smoke-test:
 
+    $ ./result/bin/version
+
 		$ ./result/bin/addx 55 11
 
 		$ ./result/bin/subx 55 11
