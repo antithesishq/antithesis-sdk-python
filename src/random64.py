@@ -24,7 +24,7 @@ def get_random() -> int:
     """Provides a random 64 bit int
 
     Returns:
-        (int): A random 64 bit int
+        int: A random 64 bit int
     """
     return get_random_value()
 
@@ -35,6 +35,9 @@ def random_choice(things: List[Any]) -> Any:
 
     Args:
         things (List[Any]): A list of items to choose from
+
+    Returns:
+        Any: A random item taken from the provided list
     """
     lx = len(things)
     if lx == 0:

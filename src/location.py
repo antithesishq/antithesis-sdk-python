@@ -24,7 +24,7 @@ def get_location_info(frame_info: Union[FrameInfo, None]) -> Dict[str, Union[str
         frame_info (:obj:`FrameInfo`, optional): Assertion caller's stack frame info or None
 
     Returns:
-        (Dict[str, Union[str, int]]): a dictionary containing source code info
+        Dict[str, Union[str, int]]: a dictionary containing source code info
             obtained from assertion callers.
 
     """

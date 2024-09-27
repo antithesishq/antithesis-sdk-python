@@ -6,6 +6,40 @@ This module provides functions for basic assertions:
     * sometimes
     * reachable
     * unreachable
+
+This module enables defining [test properties] about your program or [workload].
+It is part of the [Antithesis Go SDK], which enables Go applications to integrate
+with the [Antithesis platform].
+
+Code that uses this package should be instrumented with the [antithesis-go-generator]
+utility. This step is required for the Always, Sometime, and Reachable methods.
+It is not required for the Unreachable and AlwaysOrUnreachable methods, but it will
+improve the experience of using them.
+
+These functions are no-ops with minimal performance overhead when called outside of
+the Antithesis environment. However, if the environment variable ANTITHESIS_SDK_LOCAL_OUTPUT
+is set, these functions will log to the file pointed to by that variable using a
+structured JSON format defined [here]. This allows you to make use of the Antithesis
+assertions package in your regular testing, or even in production. In particular,
+very few assertions frameworks offer a convenient way to define [Sometimes assertions],
+but they can be quite useful even outside Antithesis.
+
+Each function in this package takes a parameter called message, which is a human
+readable identifier used to aggregate assertions. Antithesis generates one test
+property per unique message and this test property will be named "<message>" in
+the [triage report].
+
+This test property either passes or fails, which depends upon the evaluation of every
+assertion that shares its message. Different assertions in different parts of the code
+should have different message, but the same assertion should always have the same
+message even if it is moved to a different file.
+
+Each function also takes a parameter called details, which is a key-value map of
+optional additional information provided by the user to add context for assertion
+failures. The information that is logged will appear in the [triage report], under
+the details section of the corresponding property. Normally the values passed to
+details are evaluated at runtime.
+
 """
 
 from typing import Any, Mapping, Union, Dict, cast
@@ -110,7 +144,7 @@ def make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
         _loc_info (Dict[str, Union[str, int]]): The location infor for a basic assertion
 
     Returns:
-        The tracker lookup key
+        str: The tracker lookup key
     """
     return message
 

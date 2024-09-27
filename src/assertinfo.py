@@ -30,7 +30,7 @@ class AssertionDisplay(StrEnum):
         """Provides the AssertType for the AssertionDisplay value
 
         Returns:
-            (AssertType): The AssertType for the AssertionDisplay value
+            AssertType: The AssertType for the AssertionDisplay value
         """
         the_assert_type = AssertType.REACHABILITY
         match self:
@@ -122,19 +122,23 @@ class AssertInfo:
 
     @property
     def loc_info(self) -> Dict[str, Union[str, int]]:
-        """Dict[str, Union[str, int]]: Basic Assertion caller information (runtime and catalog)"""
+        """Dict[str, Union[str, int]]: Basic Assertion caller information
+        (runtime and catalog)
+        """
         return self._loc_info
 
     @property
     def details(self) -> Mapping[str, Any]:
-        """Mapping[str, Any]: Named details associated with a basic assertion at runtime"""
+        """Mapping[str, Any]: Named details associated with a basic assertion
+        at runtime
+        """
         return self._details
 
     def __str__(self):
         """The informal printable string representation of an AssertInfo object.
 
         Returns:
-        (str): The informal printable string representation of an AssertInfo object.
+            str: The informal printable string representation of an AssertInfo object.
         """
         return f"{self.display_type} '{self.message}' => {self.condition}"
 
@@ -142,7 +146,7 @@ class AssertInfo:
         """A dictionary representation of an AssertInfo object
 
         Returns:
-        (Dict[str, Any]): The dictionary representation of an AssertInfo object.
+            Dict[str, Any]: The dictionary representation of an AssertInfo object.
         """
         the_dict = {
             "condition": self.condition,

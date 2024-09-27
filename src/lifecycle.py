@@ -17,7 +17,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
 
     Args:
         details (Mapping[str, Any]): Additional details that are
-        associated with the system and workload under test.
+            associated with the system and workload under test.
     """
     the_dict = {"status": "complete", "details": details}
     wrapped_setup = {"antithesis_setup": the_dict}
@@ -32,7 +32,7 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     Args:
         event_name (str): The top-level name to associate with the event
         details (Mapping[str, Any]): Additional details that are
-        associated with the event
+            associated with the event
     """
     wrapped_event = {event_name: details}
     output(json.dumps(wrapped_event, indent=2))

@@ -20,6 +20,6 @@ def get_random_value() -> int:
     """Obtains a random integer
 
     Returns:
-        (int): A random integer
+        int: A random integer
     """
     return getrandbits(64)
