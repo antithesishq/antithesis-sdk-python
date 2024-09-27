@@ -50,6 +50,7 @@ import sys
 from assertinfo import AssertInfo, AssertionDisplay
 from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
+from sdk_constants import emit_version_message
 from not_internal import output
 
 WAS_HIT = True  # Assertion was reached at runtime
@@ -274,6 +275,16 @@ def assert_raw(
 # ----------------------------------------------------------------------
 # For project.scripts support
 # ----------------------------------------------------------------------
+def cmd_version():
+    """Smoke-test for the SDK Version.
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ always "this always works" t t f t f
+        HIT: AlwaysOrUnreachable 'this always works' => True
+    """
+    emit_version_message()
 
 
 def cmd_always():
