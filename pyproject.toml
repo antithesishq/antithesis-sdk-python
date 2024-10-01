@@ -2,9 +2,19 @@
 name = "antithesis-sdk"
 version = "0.1.1"
 description = "Antithesis SDK for Python"
-dependencies = [
-    # "whatever",
-]
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = ["cffi"]
+keywords = ["antithesis", "sdk", "autonomous", "testing"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+# packages = ["baseclasses", "elements"]
+py-modules = ["use_voidstar"] # dash, not underscore
+
+[project.entry-points."distutils.setup_keywords"]
+cffi_modules = "build_voidstar.py:ffibuilder"
+# cffi_modules = "cffi.setuptools_ext:cffi_modules"
 
 [tool.black]
 verbose = true
@@ -12,14 +22,14 @@ verbose = true
 [tool.mypy]
 files = "src/*.py"
 
-#[tool.pylint.messages_control]
+[tool.pylint.messages_control]
 # disable = "C0114,C0115,C0116"
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "Cython"]
+requires = ["setuptools>=61.0", "wheel", "Cython", "cffi"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
