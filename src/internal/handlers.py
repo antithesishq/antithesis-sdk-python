@@ -1,8 +1,9 @@
+from __future__ import annotations 
+
 from abc import ABC, abstractmethod
 from typing import Optional
 import os
 import random
-
 
 class Handler(ABC):
     @abstractmethod

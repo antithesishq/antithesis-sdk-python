@@ -17,7 +17,7 @@ environment, where they will fall back on values from random.getrandbits().
 """
 
 from typing import List, Any
-from not_internal import get_random_value
+from internal import dispatch_random
 
 
 def get_random() -> int:
@@ -26,7 +26,7 @@ def get_random() -> int:
     Returns:
         int: A random 64 bit int
     """
-    return get_random_value()
+    return dispatch_random()
 
 
 def random_choice(things: List[Any]) -> Any:
