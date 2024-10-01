@@ -1,0 +1,20 @@
+[project]
+name = "antithesis-sdk-ffi"
+version = "0.1.1"
+description = "Antithesis SDK FFI for Python"
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = ["cffi"]
+keywords = ["antithesis", "sdk", "autonomous", "testing"]
+
+[tool.setuptools]
+# package-dir = {"" = "src"}
+# packages = ["baseclasses", "elements"]
+py-modules = ["build_voidstar"] # dash, not underscore
+
+[project.entry-points."distutils.setup_keywords"]
+cffi_modules = "build_voidstar.py:ffibuilder"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "Cython", "cffi"]
+build-backend = "setuptools.build_meta"
