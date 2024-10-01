@@ -41,7 +41,7 @@ class LocalHandler(Handler):
 class NoopHandler(Handler):
 
     @staticmethod
-    def get() -> Optional[NoopHandler]:
+    def get() -> NoopHandler:
         return NoopHandler()
 
     def output(self, value: str) -> None:
