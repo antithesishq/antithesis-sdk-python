@@ -22,9 +22,6 @@ class LocalHandler(Handler):
         abs_path = os.path.abspath(file)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
 
-        # Clear file
-        open(abs_path, "w").close()
-
         self.file = file
 
     @staticmethod
@@ -37,6 +34,18 @@ class LocalHandler(Handler):
     def output(self, value: str) -> None:
         with open(self.file, "a") as file:
             file.write(value)
+
+    def random(self) -> int:
+        return random.getrandbits(64)
+
+class NoopHandler(Handler):
+
+    @staticmethod
+    def get() -> Optional[NoopHandler]:
+        return NoopHandler()
+
+    def output(self, value: str) -> None:
+        return 
 
     def random(self) -> int:
         return random.getrandbits(64)
