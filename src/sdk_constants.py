@@ -5,7 +5,7 @@ Contains constants and version info for the language, SDK, and protocol
 import importlib.metadata
 import json
 import sys
-from not_internal import output
+from internal import dispatch_output
 
 ANTITHESIS_PROTOCOL_VERSION = "1.0.0"
 ANTITHESIS_SDK_VERSION = importlib.metadata.version("antithesis-sdk")
@@ -25,4 +25,4 @@ def emit_version_message():
     }
 
     wrapped_version = {"antithesis_sdk": version_info}
-    output(json.dumps(wrapped_version, indent=2))
+    dispatch_output(json.dumps(wrapped_version, indent=2))

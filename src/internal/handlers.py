@@ -1,9 +1,10 @@
-from __future__ import annotations 
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Optional
 import os
 import random
+
 
 class Handler(ABC):
     @abstractmethod
@@ -16,7 +17,6 @@ class Handler(ABC):
 
 
 class LocalHandler(Handler):
-
     LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
 
     def __init__(self, file: str):
@@ -39,14 +39,14 @@ class LocalHandler(Handler):
     def random(self) -> int:
         return random.getrandbits(64)
 
-class NoopHandler(Handler):
 
+class NoopHandler(Handler):
     @staticmethod
     def get() -> NoopHandler:
         return NoopHandler()
 
     def output(self, value: str) -> None:
-        return 
+        return
 
     def random(self) -> int:
         return random.getrandbits(64)
