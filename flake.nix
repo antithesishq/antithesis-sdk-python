@@ -53,11 +53,13 @@
           arg = project.renderers.withPackages { 
             inherit python; 
             extraPackages = (ps: with ps; [
+              black
               build
               mypy
+              pdoc
               pip
+              pylint
               pytest
-              black
             ]);
           };
 

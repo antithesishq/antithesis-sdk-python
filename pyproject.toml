@@ -1,16 +1,32 @@
 [project]
 name = "antithesis-sdk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Antithesis SDK for Python"
 dependencies = [
     # "whatever",
 ]
+
+[tool.black]
+verbose = true
+
+[tool.mypy]
+files = "src/*.py"
+
+#[tool.pylint.messages_control]
+# disable = "C0114,C0115,C0116"
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
+
+# version 
+version = "assertions:cmd_version"
+
 # always "message text" t t f t f 
 always = "assertions:cmd_always"
 
