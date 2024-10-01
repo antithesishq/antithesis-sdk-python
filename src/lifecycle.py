@@ -6,8 +6,7 @@ reached.
 
 from typing import Mapping, Any
 import json
-from not_internal import output
-from internal import requires_antithesis_output
+from internal import dispatch_output, requires_antithesis_output
 
 @requires_antithesis_output
 def setup_complete(details: Mapping[str, Any]) -> None:
@@ -22,7 +21,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     """
     the_dict = {"status": "complete", "details": details}
     wrapped_setup = {"antithesis_setup": the_dict}
-    output(json.dumps(wrapped_setup, indent=2))
+    dispatch_output(json.dumps(wrapped_setup, indent=2))
 
 @requires_antithesis_output
 def send_event(event_name: str, details: Mapping[str, Any]) -> None:
@@ -36,4 +35,4 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
             associated with the event
     """
     wrapped_event = {event_name: details}
-    output(json.dumps(wrapped_event, indent=2))
+    dispatch_output(json.dumps(wrapped_event, indent=2))
