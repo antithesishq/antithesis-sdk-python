@@ -7,8 +7,9 @@ reached.
 from typing import Mapping, Any
 import json
 from not_internal import output
+from internal import requires_antithesis_output
 
-
+@requires_antithesis_output
 def setup_complete(details: Mapping[str, Any]) -> None:
     """setup_complete indicates to Antithesis that setup has completed.
     Call this function when your system and workload are fully
@@ -23,7 +24,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     wrapped_setup = {"antithesis_setup": the_dict}
     output(json.dumps(wrapped_setup, indent=2))
 
-
+@requires_antithesis_output
 def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     """send_event indicates to Antithesis that a certain event
     has been reached. It provides greater information about the

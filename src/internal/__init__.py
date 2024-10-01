@@ -7,4 +7,4 @@ def _setup_handler() -> Handler:
 
 _HANDLER: Handler = _setup_handler()
 
-from .dispatch import dispatch_output, dispatch_random
+from .dispatch import dispatch_output, dispatch_random, requires_antithesis_output

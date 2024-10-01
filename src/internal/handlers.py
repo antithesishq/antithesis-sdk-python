@@ -15,6 +15,15 @@ class Handler(ABC):
     def random(self) -> int:
         """Request randomness from handler"""
 
+    @staticmethod
+    @abstractmethod
+    def get() -> Optional[Handler]:
+        """Static method to retrieve an instance of the handler"""
+
+    @property
+    @abstractmethod
+    def handles_output(self) -> bool:
+        """Indicates whether this handler is capable of handling output"""
 
 class LocalHandler(Handler):
     LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
@@ -38,6 +47,10 @@ class LocalHandler(Handler):
 
     def random(self) -> int:
         return random.getrandbits(64)
+    
+    @property
+    def handles_output(self) -> bool:
+        return True 
 
 
 class NoopHandler(Handler):
@@ -50,3 +63,7 @@ class NoopHandler(Handler):
 
     def random(self) -> int:
         return random.getrandbits(64)
+    
+    @property
+    def handles_output(self) -> bool:
+        return False 
