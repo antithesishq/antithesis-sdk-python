@@ -13,11 +13,7 @@ in
       cython
       cffi
     ];
-  #preBuild = ''
-   #   ls -l ${ffi_lib}/lib
-  #'';
-    postBuild = ''
-      ls -l ${ffi_lib}/lib/*.so
-      echo 777777777777777777777777777777777777777777777777777777777
+    postInstall = ''
+      cp ${ffi_lib}/lib/*.so $out/${python3.sitePackages}
     '';
   }

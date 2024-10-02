@@ -53,6 +53,11 @@ from tracking import assert_tracker, get_tracker_entry
 from sdk_constants import emit_version_message
 from internal import dispatch_output, requires_antithesis_output
 
+try:
+    from _voidstar import lib
+except ImportError:
+    lib = None
+
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
 OPTIONALLY_HIT = False  # Assertion may or may not be reachable
@@ -374,3 +379,18 @@ def sub():
 
     the_diff = num1 - num2
     print(f"Subtracting: {num1} - {num2} => {the_diff}")
+
+def flush():
+    """Smoke-test for fuzz_flush().
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ flushx
+        Flushed
+    """
+    if lib is None:
+        print("Unable to flush")
+    else:
+        print("trying voidstar")
+        lib.fuzz_flush()

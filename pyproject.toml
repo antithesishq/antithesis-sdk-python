@@ -1,20 +1,19 @@
 [project]
 name = "antithesis-sdk"
-version = "0.1.1"
+version = "0.1.2"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
-dependencies = ["cffi"]
 keywords = ["antithesis", "sdk", "autonomous", "testing"]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-# packages = ["baseclasses", "elements"]
-py-modules = ["use_voidstar"] # dash, not underscore
+# [tool.setuptools]
+# include-package-data = true
+# 
+# [tool.setuptools.package-data]
+# "*" = ["*.txt"]
 
-[project.entry-points."distutils.setup_keywords"]
-cffi_modules = "build_voidstar.py:ffibuilder"
-# cffi_modules = "cffi.setuptools_ext:cffi_modules"
+# [project.entry-points."distutils.setup_keywords"]
+# cffi_modules = "build_voidstar.py:ffibuilder"
 
 [tool.black]
 verbose = true
@@ -48,6 +47,9 @@ addx = "assertions:add"
 
 # subx 100 31
 subx = "assertions:sub"
+
+# flushx
+flushx = "assertions:flush"
 
 # [tool.pydeploy]
 # exclude_libs = []
