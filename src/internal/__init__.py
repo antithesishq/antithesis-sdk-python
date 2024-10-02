@@ -4,12 +4,20 @@ local output, and no-op along with the fallback
 mechanism for choosing and initializing the 
 active handler
 """
-from .handlers import Handler, _setup_handler, LOCAL_OUTPUT_ENV_VAR
-# from .dispatch import dispatch_output, dispatch_random
+
+from .handlers import (
+    Handler,
+    LocalHandler,
+    NoopHandler,
+    VoidstarHandler,
+    _setup_handler,
+    LOCAL_OUTPUT_ENV_VAR,
+)
 from .sdk_constants import ANTITHESIS_SDK_VERSION, ANTITHESIS_PROTOCOL_VERSION
 
 
 _HANDLER: Handler = _setup_handler()
+
 
 def dispatch_output(json: str):
     """dispatch_output forwards the provided string

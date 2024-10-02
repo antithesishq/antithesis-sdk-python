@@ -2,6 +2,7 @@
 Provides implementations for the voidstar, Local,
 and No-Op handlers.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -9,7 +10,7 @@ from typing import Optional
 import os
 import random
 
-import cffi # type: ignore[import-untyped]
+import cffi  # type: ignore[import-untyped]
 
 LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
 VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
@@ -23,6 +24,7 @@ class Handler(ABC):
     processing, handlers are also required to indicate
     if they are able to forward JSON data, or not.
     """
+
     @abstractmethod
     def output(self, value: str) -> None:
         """Output to designated handler destination"""
@@ -43,11 +45,12 @@ class Handler(ABC):
 
 
 class LocalHandler(Handler):
-    """The LocalHandler conforms to the Handler 'interface' and 
-    can return random integers and write JSON data to a local file, 
-    if a path to a local file has been provided (via the environment 
+    """The LocalHandler conforms to the Handler 'interface' and
+    can return random integers and write JSON data to a local file,
+    if a path to a local file has been provided (via the environment
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
+
     def __init__(self, file: str):
         abs_path = os.path.abspath(file)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
@@ -73,9 +76,10 @@ class LocalHandler(Handler):
 
 
 class NoopHandler(Handler):
-    """The NoopHandler conforms to the Handler 'interface' and 
+    """The NoopHandler conforms to the Handler 'interface' and
     performs as little work as possible.
     """
+
     @staticmethod
     def get() -> NoopHandler:
         return NoopHandler()
@@ -99,11 +103,13 @@ size_t init_coverage_module(size_t edge_count, const char* symbol_file_name);
 bool notify_coverage(size_t edge_plus_module);
 """
 
+
 class VoidstarHandler(Handler):
-    """The VoidstarHandler conforms to the Handler 'interface' and 
-    uses libvoidstar to obtain and return random integers, and forwards 
+    """The VoidstarHandler conforms to the Handler 'interface' and
+    uses libvoidstar to obtain and return random integers, and forwards
     JSON data to the Antithesis fuzzer.
     """
+
     def __init__(self):
         self._ffi = cffi.FFI()
         self._ffi.cdef(CDEF_VOIDSTAR)
@@ -116,7 +122,7 @@ class VoidstarHandler(Handler):
     @staticmethod
     def get() -> Optional[VoidstarHandler]:
         vsh = VoidstarHandler()
-        if not vsh.handles_output():
+        if not vsh.handles_output:
             return None
         return vsh
 
@@ -130,6 +136,7 @@ class VoidstarHandler(Handler):
     @property
     def handles_output(self) -> bool:
         return self._lib is not None
+
 
 def _setup_handler() -> Handler:
     return VoidstarHandler.get() or LocalHandler.get() or NoopHandler.get()
