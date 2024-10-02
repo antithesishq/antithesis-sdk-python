@@ -51,7 +51,7 @@ from assertinfo import AssertInfo, AssertionDisplay
 from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
 from sdk_constants import emit_version_message
-from not_internal import output
+from internal import dispatch_output, requires_antithesis_output
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -68,7 +68,7 @@ def emit_assert(assert_info: AssertInfo) -> None:
     """
 
     wrapped_assert = {"antithesis_assert": assert_info.to_dict()}
-    output(json.dumps(wrapped_assert, indent=2))
+    dispatch_output(json.dumps(wrapped_assert, indent=2))
 
 
 # pylint: disable=too-many-arguments
@@ -149,7 +149,7 @@ def make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
     """
     return message
 
-
+@requires_antithesis_output
 def always_or_unreachable(
     condition: bool, message: str, details: Mapping[str, Any]
 ) -> None:
@@ -182,7 +182,7 @@ def always_or_unreachable(
         assert_id,
     )
 
-
+@requires_antithesis_output
 def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None:
     """Asserts that condition is true at least one time that this function
     was called. (If the assertion is never encountered, the test property
@@ -214,6 +214,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
 
 
 # pylint: disable=too-many-arguments
+@requires_antithesis_output
 def assert_raw(
     condition: bool,
     message: str,
