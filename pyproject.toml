@@ -6,15 +6,6 @@ license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["antithesis", "sdk", "autonomous", "testing"]
 
-# [tool.setuptools]
-# include-package-data = true
-# 
-# [tool.setuptools.package-data]
-# "*" = ["*.txt"]
-
-# [project.entry-points."distutils.setup_keywords"]
-# cffi_modules = "build_voidstar.py:ffibuilder"
-
 [tool.black]
 verbose = true
 
