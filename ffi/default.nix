@@ -1,10 +1,9 @@
 let
   pkgs = import <nixpkgs> {};
-  ffi_lib = import ./ffi/default.nix;
 in
   with pkgs;
   python3.pkgs.buildPythonPackage {
-    pname = "antithesis-sdk-python";
+    pname = "antithesis-sdk-python-ffi";
     version = "0.1.1";
     format = "pyproject";
     src = ./.;
@@ -13,11 +12,12 @@ in
       cython
       cffi
     ];
-  #preBuild = ''
-   #   ls -l ${ffi_lib}/lib
-  #'';
-    postBuild = ''
-      ls -l ${ffi_lib}/lib/*.so
-      echo 777777777777777777777777777777777777777777777777777777777
+    preBuild = ''
+      python build_voidstar.py
+    '';
+    installPhase = ''
+      mkdir -p $out/lib
+      cp *.so $out/lib
     '';
   }
+
