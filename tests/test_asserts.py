@@ -16,6 +16,8 @@ def details_example():
     }
     return details
 
+# TODO: Presently this always resutls in a NoopHandler from the perspective of assertions.py module
+# needs investogation, and repair,  maybe more extensive? reload(internal) is needed
 def test_always_or_unreachable(setup_local_handler, details_example):
     always_or_unreachable(True, "alwaysOrUnreachable test", details_example)
 

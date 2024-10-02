@@ -33,9 +33,6 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 
-# version 
-version = "assertions:cmd_version"
-
 # always "message text" t t f t f 
 always = "assertions:cmd_always"
 
@@ -48,8 +45,17 @@ addx = "assertions:add"
 # subx 100 31
 subx = "assertions:sub"
 
-# flushx
-flushx = "assertions:flush"
+# randomx
+randomx = "random64:cmd_get_random"
+
+# versionx
+versionx = "lifecycle:cmd_version"
+
+# eventx
+eventx = "lifecycle:cmd_event"
+
+# setup
+setupx = "lifecycle:cmd_setup"
 
 # [tool.pydeploy]
 # exclude_libs = []

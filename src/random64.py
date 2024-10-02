@@ -28,7 +28,6 @@ def get_random() -> int:
     """
     return dispatch_random()
 
-
 def random_choice(things: List[Any]) -> Any:
     """Provides a randomly chosen item from a list of options.
         You should not store this value, but should use it immediately.
@@ -49,3 +48,16 @@ def random_choice(things: List[Any]) -> Any:
         val = 0 - val
     idx = val % lx
     return things[idx]
+
+def cmd_get_random():
+    """Smoke-test for fuzz_get_random().
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ randomx
+        1804289383
+    """
+    val = get_random()
+    print(val)
+

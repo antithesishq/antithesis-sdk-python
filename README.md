@@ -1,9 +1,9 @@
 Antithesis SDK for Python
 =========================
 
-Start a development shell.nix to install build tools to the working environment:
+Start a development shell to install build tools to the working environment:
 
-    $ nix develop
+    $ nix-shell
 
 
 Tools installed includes: 
@@ -13,8 +13,15 @@ Tools installed includes:
 - mypy
 - pdoc
 - pip
+- pylint
 - pytest
 - python3
+- setuptools
+- wheel
+
+Packages installed:
+- cffi
+- Cython
 
 To format source:
 
@@ -27,6 +34,10 @@ To evaluate with type hints:
 To perform linting:
 
     $ pylint src
+
+To perform testing:
+
+    $ pytest
 
 To build distributions:
 
@@ -49,3 +60,4 @@ To smoke-test:
 
 		$ ./result/bin/sometimes "Eventually we get this" t f t t f f t f
 
+		$ ./result/bin/flushx

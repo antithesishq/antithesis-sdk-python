@@ -14,6 +14,6 @@ in
       cffi
     ];
     postInstall = ''
-      cp ${ffi_lib}/lib/*.so $out/${python3.sitePackages}
+      cp ${ffi_lib}/lib/*.so $out/${python3.sitePackages}/internal
     '';
   }

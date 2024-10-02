@@ -6,6 +6,7 @@ void fuzz_json_data(const char* message, size_t length);
 void fuzz_flush();
 size_t init_coverage_module(size_t edge_count, const char* symbol_file_name);
 bool notify_coverage(size_t edge_plus_module);
+bool unavailable();
 '''
 
 SRC="""
@@ -23,13 +24,14 @@ void fuzz_json_data( const char* message, size_t length );
 void fuzz_flush();
 size_t init_coverage_module(size_t edge_count, const char* symbol_file_name);
 bool notify_coverage(size_t edge_plus_module);
+bool unavailable();
 
 #ifdef __cplusplus
 }
 #endif
 
 void fuzz_flush() {
-fwrite(\"Flushed\", 1, 7, stdout);
+fwrite(\"FLUSHED\", 1, 7, stdout);
 fwrite(\"\\n\", 1, 1, stdout);
 }
 
@@ -38,7 +40,8 @@ uint64_t fuzz_get_random() {
 }
 
 void fuzz_json_data( const char* message, size_t length ) {
-    fwrite(\"JSONOUT\", 1, 7, stdout);
+    fwrite(\"JSONOUT: \", 1, 9, stdout);
+    fwrite(message, 1, length, stdout);
     fwrite(\"\\n\", 1, 1, stdout);
 }
 
@@ -50,6 +53,9 @@ bool notify_coverage(size_t edge_plus_module) {
     return true;
 };
 
+bool unavailable() {
+    return false;
+};
 """
 
 

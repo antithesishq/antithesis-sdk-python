@@ -50,13 +50,12 @@ import sys
 from assertinfo import AssertInfo, AssertionDisplay
 from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
-from sdk_constants import emit_version_message
 from internal import dispatch_output, requires_antithesis_output
 
-try:
-    from _voidstar import lib
-except ImportError:
-    lib = None
+# try:
+#     from _voidstar import lib as voidstar_lib
+# except ImportError:
+#     voidstar_lib = None
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -281,18 +280,6 @@ def assert_raw(
 # ----------------------------------------------------------------------
 # For project.scripts support
 # ----------------------------------------------------------------------
-def cmd_version():
-    """Smoke-test for the SDK Version.
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ always "this always works" t t f t f
-        HIT: AlwaysOrUnreachable 'this always works' => True
-    """
-    emit_version_message()
-
-
 def cmd_always():
     """Smoke-test for always_or_unreachable.
 
@@ -379,18 +366,3 @@ def sub():
 
     the_diff = num1 - num2
     print(f"Subtracting: {num1} - {num2} => {the_diff}")
-
-def flush():
-    """Smoke-test for fuzz_flush().
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ flushx
-        Flushed
-    """
-    if lib is None:
-        print("Unable to flush")
-    else:
-        print("trying voidstar")
-        lib.fuzz_flush()
