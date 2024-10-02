@@ -33,9 +33,6 @@ sometimes = "assertions:cmd_sometimes"
 # addx 10 17
 addx = "assertions:add"
 
-# subx 100 31
-subx = "assertions:sub"
-
 # randomx
 randomx = "random64:cmd_get_random"
 

@@ -1,18 +1,27 @@
-from internal import _HANDLER
-from typing import Callable, Any
-
-def requires_antithesis_output(func: Callable) -> Callable:
-    """Wraps output code to reduce needless work in noop cases"""
-    def wrapper(*args, **kwargs) -> Any:
-        if _HANDLER.handles_output:
-            return func(*args, **kwargs)
-        else:
-            return None
-    return wrapper
-
-def dispatch_output(json: str):
-    return _HANDLER.output(json)
-
-
-def dispatch_random() -> int:
-    return _HANDLER.random()
+"""Dispatch
+The dispatch module contains functions that proxy 
+requests for JSON output and random integer generation
+from the active handler.
+"""
+# from internal import _HANDLER
+#
+# def dispatch_output(json: str):
+#     """dispatch_output forwards the provided string
+#     to the active HANDLER.  There is no validation that
+#     the forwarded string is in valid JSON format.
+#
+#     Args:
+#         json (str): String that will be forwarded to
+#             the active handler.
+#     """
+#     return _HANDLER.output(json)
+#
+#
+# def dispatch_random() -> int:
+#     """dispatch_random requests a random 64-bit
+#            integer from the active handler.
+#
+#     Returns:
+#         int: A random 64 bit int
+#     """
+#     return _HANDLER.random()

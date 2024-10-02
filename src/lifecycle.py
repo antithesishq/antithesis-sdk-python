@@ -8,14 +8,12 @@ from typing import Mapping, Any
 import json
 import sys
 from internal import (
-    dispatch_output, 
-    requires_antithesis_output,
+    dispatch_output,
     ANTITHESIS_SDK_VERSION,
     ANTITHESIS_PROTOCOL_VERSION,
 )
 
 
-# @requires_antithesis_output
 def setup_complete(details: Mapping[str, Any]) -> None:
     """setup_complete indicates to Antithesis that setup has completed.
     Call this function when your system and workload are fully
@@ -30,7 +28,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     wrapped_setup = {"antithesis_setup": the_dict}
     dispatch_output(json.dumps(wrapped_setup, indent=2))
 
-# @requires_antithesis_output
+
 def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     """send_event indicates to Antithesis that a certain event
     has been reached. It provides greater information about the
@@ -43,6 +41,7 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     """
     wrapped_event = {event_name: details}
     dispatch_output(json.dumps(wrapped_event, indent=2))
+
 
 def emit_version_message():
     """Emits the version info for this SDK"""
@@ -59,6 +58,7 @@ def emit_version_message():
 
     wrapped_version = {"antithesis_sdk": version_info}
     dispatch_output(json.dumps(wrapped_version, indent=2))
+
 
 # ----------------------------------------------------------------------
 # For project.scripts support
@@ -84,13 +84,14 @@ def cmd_version():
     """
     emit_version_message()
 
+
 def cmd_event():
     """Smoke-test for send_event().
 
     Examples:
         Should be executed from a devshell
 
-        >>> $ eventx tree leaf_color green 
+        >>> $ eventx tree leaf_color green
         FUZZ_JSON_DATA(45 bytes): {
           "tree": {
             "leaf_color": "green"
@@ -110,13 +111,14 @@ def cmd_event():
         val = sys.argv[3]
     send_event(name, {tag: val})
 
+
 def cmd_setup():
     """Smoke-test for send_event().
 
     Examples:
         Should be executed from a devshell
 
-        >>> $ eventx tree leaf_color green 
+        >>> $ eventx tree leaf_color green
         FUZZ_JSON_DATA(77 bytes): {
           "antithesis_setup": {
             "status": "complete",

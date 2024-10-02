@@ -50,12 +50,7 @@ import sys
 from assertinfo import AssertInfo, AssertionDisplay
 from location import get_location_info
 from tracking import assert_tracker, get_tracker_entry
-from internal import dispatch_output, requires_antithesis_output
-
-# try:
-#     from _voidstar import lib as voidstar_lib
-# except ImportError:
-#     voidstar_lib = None
+from internal import dispatch_output
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -153,7 +148,7 @@ def make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
     """
     return message
 
-@requires_antithesis_output
+
 def always_or_unreachable(
     condition: bool, message: str, details: Mapping[str, Any]
 ) -> None:
@@ -186,7 +181,7 @@ def always_or_unreachable(
         assert_id,
     )
 
-@requires_antithesis_output
+
 def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None:
     """Asserts that condition is true at least one time that this function
     was called. (If the assertion is never encountered, the test property
@@ -218,7 +213,6 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
 
 
 # pylint: disable=too-many-arguments
-@requires_antithesis_output
 def assert_raw(
     condition: bool,
     message: str,
@@ -341,28 +335,3 @@ def add():
 
     the_sum = num1 + num2
     print(f"Adding: {num1} + {num2} => {the_sum}")
-
-
-def sub():
-    """Smoke-test for subtracting two integers.
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ subx 55 11
-        Subtracting: 55 - 11 => 44
-    """
-    num1 = 0
-    num2 = 0
-    if len(sys.argv) > 1:
-        maybe_num1 = sys.argv[1]
-        if maybe_num1.isdigit():
-            num1 = int(maybe_num1)
-
-    if len(sys.argv) > 2:
-        maybe_num2 = sys.argv[2]
-        if maybe_num2.isdigit():
-            num2 = int(maybe_num2)
-
-    the_diff = num1 - num2
-    print(f"Subtracting: {num1} - {num2} => {the_diff}")
