@@ -32,7 +32,6 @@ class AssertionDisplay(StrEnum):
         Returns:
             AssertType: The AssertType for the AssertionDisplay value
         """
-        the_assert_type = AssertType.REACHABILITY
         match self:
             case AssertionDisplay.ALWAYS | AssertionDisplay.ALWAYS_OR_UNREACHABLE:
                 the_assert_type = AssertType.ALWAYS
