@@ -49,3 +49,16 @@ def random_choice(things: List[Any]) -> Any:
         val = 0 - val
     idx = val % lx
     return things[idx]
+
+
+def cmd_get_random():
+    """Smoke-test for fuzz_get_random().
+
+    Examples:
+        Should be executed from a devshell
+
+        >>> $ randomx
+        1804289383
+    """
+    val = get_random()
+    print(val)

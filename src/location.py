@@ -5,7 +5,7 @@ source code metadata for assertion callers.
 
 """
 
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, Optional
 from inspect import FrameInfo
 
 
@@ -17,7 +17,7 @@ def _get_class_name(frame_info: Any) -> str:
     return class_name
 
 
-def get_location_info(frame_info: Union[FrameInfo, None]) -> Dict[str, Union[str, int]]:
+def get_location_info(frame_info: Optional[FrameInfo]) -> Dict[str, Union[str, int]]:
     """Provides a dictionary containing source code info obtained from assertion callers.
 
     Args:

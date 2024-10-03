@@ -1,11 +1,11 @@
 let
   pkgs = import <nixpkgs> {};
-  ffi_lib = import ./ffi/default.nix;
+  sdk_version = (builtins.fromTOML(builtins.readFile( ./pyproject.toml))).project.version;
 in
   with pkgs;
   python3.pkgs.buildPythonPackage {
     pname = "antithesis-sdk-python";
-    version = "0.1.1";
+    version = sdk_version;
     format = "pyproject";
     src = ./.;
     propagatedBuildInputs = with python3.pkgs; [
@@ -13,11 +13,4 @@ in
       cython
       cffi
     ];
-  #preBuild = ''
-   #   ls -l ${ffi_lib}/lib
-  #'';
-    postBuild = ''
-      ls -l ${ffi_lib}/lib/*.so
-      echo 777777777777777777777777777777777777777777777777777777777
-    '';
   }
