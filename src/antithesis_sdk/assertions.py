@@ -55,7 +55,8 @@ from ._internal import dispatch_output
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
 OPTIONALLY_HIT = False  # Assertion may or may not be reachable
-EXPECTING_TRUE = True  # Assertion condition should be True
+ASSERTING_TRUE = True  # Assertion condition should be True
+ASSERTING_FALSE = True  # Assertion condition should be False
 
 
 def emit_assert(assert_info: AssertInfo) -> None:
@@ -149,6 +150,37 @@ def make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
     return message
 
 
+def always(
+    condition: bool, message: str, details: Mapping[str, Any]
+) -> None:
+    """Asserts that condition is true every time this function
+    is called. This test property will be viewable in the
+    “Antithesis SDK: Always” group of your triage report.
+
+    Args:
+        condition (bool): Indicates if the assertion is true
+        message (str): The unique message associated with the assertion
+        details (Mapping[str, Any]): Named details associated with the assertion
+    """
+    all_frames = stack()
+    this_frame = all_frames[1]
+    location_info = get_location_info(this_frame)
+    assert_id = make_key(message, location_info)
+    display_type = AssertionDisplay.ALWAYS
+    assert_type = display_type.assert_type()
+    assert_impl(
+        condition,
+        message,
+        details,
+        location_info,
+        WAS_HIT,
+        MUST_BE_HIT,
+        assert_type,
+        display_type,
+        assert_id,
+    )
+
+
 def always_or_unreachable(
     condition: bool, message: str, details: Mapping[str, Any]
 ) -> None:
@@ -211,7 +243,65 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
         assert_id,
     )
 
+def reachable(message: str, details: Mapping[str, Any]) -> None:
+    """Reachable asserts that a line of code is reached at least
+    once. The corresponding test property will pass if this function
+    is ever called. (If it is never called the test property will
+    therefore fail.) This test property will be viewable in the
+    “Antithesis SDK: Reachablity assertions” group.
 
+    Args:
+        condition (bool): Indicates if the assertion is true
+        message (str): The unique message associated with the assertion
+        details (Mapping[str, Any]): Named details associated with the assertion
+    """
+    all_frames = stack()
+    this_frame = all_frames[1]
+    location_info = get_location_info(this_frame)
+    assert_id = make_key(message, location_info)
+    display_type = AssertionDisplay.ALWAYS
+    assert_type = display_type.assert_type()
+    assert_impl(
+        ASSERTING_TRUE,
+        message,
+        details,
+        location_info,
+        WAS_HIT,
+        MUST_BE_HIT,
+        assert_type,
+        display_type,
+        assert_id,
+    )
+
+def unreachable(message: str, details: Mapping[str, Any]) -> None:
+    """Unreachable asserts that a line of code is never reached.
+    The corresponding test property will fail if this function
+    is ever called. (If it is never called the test property will
+    therefore pass.) This test property will be viewable in the 
+    “Antithesis SDK: Reachablity assertions” group.
+
+    Args:
+        condition (bool): Indicates if the assertion is true
+        message (str): The unique message associated with the assertion
+        details (Mapping[str, Any]): Named details associated with the assertion
+    """
+    all_frames = stack()
+    this_frame = all_frames[1]
+    location_info = get_location_info(this_frame)
+    assert_id = make_key(message, location_info)
+    display_type = AssertionDisplay.ALWAYS
+    assert_type = display_type.assert_type()
+    assert_impl(
+        ASSERTING_FALSE,
+        message,
+        details,
+        location_info,
+        WAS_HIT,
+        OPTIONALLY_HIT,
+        assert_type,
+        display_type,
+        assert_id,
+    )
 # pylint: disable=too-many-arguments
 def assert_raw(
     condition: bool,

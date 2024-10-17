@@ -64,7 +64,7 @@ class LocalHandler(Handler):
         return LocalHandler(file)
 
     def output(self, value: str) -> None:
-        with open(self.file, "a", encoding="utf-8") as file:
+        with open(self.file, "w", encoding="utf-8") as file:
             file.write(value)
 
     def random(self) -> int:
