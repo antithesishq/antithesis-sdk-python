@@ -1,7 +1,7 @@
 import json
 from inspect import stack
 import pytest
-from location import get_location_info
+from antithesis_sdk.location import get_location_info
 
 @pytest.fixture
 def simple_details():
