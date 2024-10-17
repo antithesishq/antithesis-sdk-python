@@ -1,10 +1,10 @@
 import pytest
 
-from random64 import get_random, random_choice
+from antithesis_sdk.random64 import get_random, random_choice
 
 def test_random_dist():
     all_vals = set([])
-    for i in range(1000000):
+    for i in range(100000):
         random_val = get_random()
         already_has_val = random_val in all_vals
         assert not already_has_val

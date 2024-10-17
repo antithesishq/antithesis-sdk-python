@@ -47,10 +47,10 @@ from inspect import stack
 import json
 import sys
 
-from assertinfo import AssertInfo, AssertionDisplay
-from location import get_location_info
-from tracking import assert_tracker, get_tracker_entry
-from internal import dispatch_output
+from .assertinfo import AssertInfo, AssertionDisplay
+from .location import get_location_info
+from .tracking import assert_tracker, get_tracker_entry
+from ._internal import dispatch_output
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once

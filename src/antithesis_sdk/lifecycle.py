@@ -7,7 +7,7 @@ reached.
 from typing import Mapping, Any
 import json
 import sys
-from internal import (
+from ._internal import (
     dispatch_output,
     ANTITHESIS_SDK_VERSION,
     ANTITHESIS_PROTOCOL_VERSION,

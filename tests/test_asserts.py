@@ -2,8 +2,8 @@ import json
 from inspect import stack
 
 import pytest
-from assertions import always_or_unreachable, sometimes, assert_raw
-from handler_helper import setup_local_handler
+from antithesis_sdk.assertions import always_or_unreachable, sometimes, assert_raw
+from .handler_helper import setup_local_handler
 
 @pytest.fixture
 def details_example():

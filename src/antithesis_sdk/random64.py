@@ -17,7 +17,7 @@ environment, where they will fall back on values from random.getrandbits().
 """
 
 from typing import List, Any
-from internal import dispatch_random
+from ._internal import dispatch_random
 
 
 def get_random() -> int:
