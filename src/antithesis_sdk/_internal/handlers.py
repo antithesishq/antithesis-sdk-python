@@ -51,21 +51,27 @@ class LocalHandler(Handler):
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
 
-    def __init__(self, file: str):
-        abs_path = os.path.abspath(file)
+    def __init__(self, filename: str):
+        abs_path = os.path.abspath(filename)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
-        self.file = file
+        self.file = None
+        try:
+            self.file = open(filename, "w", encoding="utf-8")
+        except IOError:
+            self.file = None
 
     @staticmethod
     def get() -> Optional[LocalHandler]:
-        file = os.getenv(LOCAL_OUTPUT_ENV_VAR)
-        if file is None:
+        filename = os.getenv(LOCAL_OUTPUT_ENV_VAR)
+        if filename is None:
             return None
-        return LocalHandler(file)
+        maybe_handler = LocalHandler(filename)
+        return None if maybe_handler.file is None else maybe_handler
 
     def output(self, value: str) -> None:
-        with open(self.file, "w", encoding="utf-8") as file:
-            file.write(value)
+        self.file.write(value)
+        self.file.write("\n")
+        self.file.flush()
 
     def random(self) -> int:
         return random.getrandbits(64)
