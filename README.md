@@ -19,7 +19,7 @@ Tools installed includes:
 - pip
 - pylint
 - pytest
-- python3
+- python312
 - setuptools
 - wheel
 

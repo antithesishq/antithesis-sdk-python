@@ -24,7 +24,7 @@ def details_example():
     }
     return details
 
-# TODO: Presently this always resutls in a NoopHandler from the perspective of assertions.py module
+# TODO: Presently this always results in a NoopHandler from the perspective of assertions.py module
 # needs investogation, and repair,  maybe more extensive? reload(internal) is needed
 def test_always(setup_local_handler, details_example):
     always(True, "always test", details_example)

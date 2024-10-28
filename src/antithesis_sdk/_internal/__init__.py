@@ -12,6 +12,7 @@ from .handlers import (
     VoidstarHandler,
     _setup_handler,
     LOCAL_OUTPUT_ENV_VAR,
+    ASSERTION_CATALOG_ENV_VAR,
 )
 from .sdk_constants import ANTITHESIS_SDK_VERSION, ANTITHESIS_PROTOCOL_VERSION
 

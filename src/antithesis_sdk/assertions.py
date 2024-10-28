@@ -45,12 +45,13 @@ details are evaluated at runtime.
 from typing import Any, Mapping, Union, Dict, cast
 from inspect import stack
 import json
+import os
 import sys
 
 from .assertinfo import AssertInfo, AssertionDisplay
 from .location import get_location_info
 from .tracking import assert_tracker, get_tracker_entry
-from ._internal import dispatch_output
+from ._internal import dispatch_output, ASSERTION_CATALOG_ENV_VAR
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -360,6 +361,11 @@ def assert_raw(
         assert_id,
     )
 
+assertion_catalog = os.getenv(ASSERTION_CATALOG_ENV_VAR)
+if assertion_catalog is not None:
+    execfile(assertion_catalog)
+    # cat_file = open(assertion_catalog, "r", encoding="utf-8")
+    # data_bytes = cat_file.read()
 
 # ----------------------------------------------------------------------
 # For project.scripts support

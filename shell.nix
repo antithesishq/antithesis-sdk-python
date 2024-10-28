@@ -2,15 +2,15 @@ let
   pkgs = import <nixpkgs> {};
 in pkgs.mkShell {
   packages = [
-    pkgs.python3
-    (pkgs.python3.withPackages (ps: with ps; [
+    pkgs.python312
+    (pkgs.python312.withPackages (ps: with ps; [
       black
       build
       cffi
       cython
       mypy
       pdoc
-      pip
+      # pip
       pylint
       pytest
       setuptools

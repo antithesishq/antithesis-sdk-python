@@ -3,12 +3,12 @@ let
   sdk_version = (builtins.fromTOML(builtins.readFile( ./pyproject.toml))).project.version;
 in
   with pkgs;
-  python3.pkgs.buildPythonPackage {
+  python312.pkgs.buildPythonPackage {
     pname = "antithesis-sdk-python";
     version = sdk_version;
     format = "pyproject";
     src = ./.;
-    propagatedBuildInputs = with python3.pkgs; [
+    propagatedBuildInputs = with python312.pkgs; [
       setuptools
       cython
       cffi

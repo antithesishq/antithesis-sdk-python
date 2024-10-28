@@ -6,13 +6,15 @@ and No-Op handlers.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
+import cffi  # type: ignore[import-untyped]
+from io import TextIOWrapper
 import os
 import random
+from typing import Optional
 
-import cffi  # type: ignore[import-untyped]
 
 LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
+ASSERTION_CATALOG_ENV_VAR: str = "ANTITHESIS_ASSERTION_CATALOG"
 VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
 
 
@@ -51,10 +53,11 @@ class LocalHandler(Handler):
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
 
-    def __init__(self, filename: str, file):
+    def __init__(self, filename: str, file: TextIOWrapper, catalog_filename: Optional[str]):
         abs_path = os.path.abspath(filename)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
         self.file = file
+        self.catalog_filename = catalog_filename
 
     @staticmethod
     def get() -> Optional[LocalHandler]:
@@ -65,7 +68,10 @@ class LocalHandler(Handler):
             file = open(filename, "w", encoding="utf-8")
         except IOError:
             return None
-        return LocalHandler(filename, file)
+
+        catalog_file = os.getenv(ASSERTION_CATALOG_ENV_VAR)
+        lh = LocalHandler(filename, file, catalog_file)
+        return lh
 
     def output(self, value: str) -> None:
         self.file.write(value)
