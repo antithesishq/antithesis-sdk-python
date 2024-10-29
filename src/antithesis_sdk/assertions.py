@@ -365,10 +365,24 @@ def assert_raw(
 # ----------------------------------------------------------------------
 # Evaluate once - on load
 # ----------------------------------------------------------------------
-_CATALOG = os.getenv(CATALOG_ENV_VAR)
+_CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
     with open(_CATALOG, "r", encoding="utf-8") as f:
-        exec(f.read())
+        # exec(f.read())
+        lines = f.readlines()
+        for line in lines:
+             the_dict = json.loads(line)
+             assert_impl(
+                the_dict['condition'],
+                the_dict['message'],
+                the_dict['details'],
+                the_dict['location_info'],
+                the_dict['hit'],
+                the_dict['must_hit'],
+                the_dict['assert_type'],
+                the_dict['display_type'],
+                the_dict['id']
+             )
 
 
 # ----------------------------------------------------------------------
