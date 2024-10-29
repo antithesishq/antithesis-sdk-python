@@ -16,7 +16,6 @@ Tools installed includes:
 - build
 - mypy
 - pdoc
-- pip
 - pylint
 - pytest
 - python312
@@ -54,14 +53,14 @@ To view docs:
 
 To smoke-test:
 
-    $ ./result/bin/version
-
 		$ ./result/bin/addx 55 11
 
-		$ ./result/bin/subx 55 11
+		$ ./result/bin/setupx
+
+		$ ./result/bin/eventx
+
+		$ ./result/bin/randomx
 
 		$ ./result/bin/always "Yes, this is ok now" t f t t f f t f
 
 		$ ./result/bin/sometimes "Eventually we get this" t f t t f f t f
-
-		$ ./result/bin/flushx

@@ -10,7 +10,6 @@ in pkgs.mkShell {
       cython
       mypy
       pdoc
-      # pip
       pylint
       pytest
       setuptools

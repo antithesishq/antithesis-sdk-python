@@ -8,13 +8,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import cffi  # type: ignore[import-untyped]
 from io import TextIOWrapper
+import json
 import os
 import random
+import sys
 from typing import Optional
 
+from .sdk_constants import (
+    LOCAL_OUTPUT_ENV_VAR,
+    ANTITHESIS_SDK_VERSION,
+    ANTITHESIS_PROTOCOL_VERSION,
+)
 
-LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
-ASSERTION_CATALOG_ENV_VAR: str = "ANTITHESIS_ASSERTION_CATALOG"
 VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
 
 
@@ -53,11 +58,10 @@ class LocalHandler(Handler):
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
 
-    def __init__(self, filename: str, file: TextIOWrapper, catalog_filename: Optional[str]):
+    def __init__(self, filename: str, file: TextIOWrapper):
         abs_path = os.path.abspath(filename)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
         self.file = file
-        self.catalog_filename = catalog_filename
 
     @staticmethod
     def get() -> Optional[LocalHandler]:
@@ -68,10 +72,7 @@ class LocalHandler(Handler):
             file = open(filename, "w", encoding="utf-8")
         except IOError:
             return None
-
-        catalog_file = os.getenv(ASSERTION_CATALOG_ENV_VAR)
-        lh = LocalHandler(filename, file, catalog_file)
-        return lh
+        return LocalHandler(filename, file)
 
     def output(self, value: str) -> None:
         self.file.write(value)
@@ -151,3 +152,18 @@ class VoidstarHandler(Handler):
 
 def _setup_handler() -> Handler:
     return VoidstarHandler.get() or LocalHandler.get() or NoopHandler.get()
+
+def _version_message() -> str:
+    """Format the version info for this SDK"""
+    language_info = {
+        "name": "Python",
+        "version": sys.version,
+    }
+
+    version_info = {
+        "language": language_info,
+        "sdk_version": ANTITHESIS_SDK_VERSION,
+        "protocol_version": ANTITHESIS_PROTOCOL_VERSION,
+    }
+    wrapped_version = {"antithesis_sdk": version_info}
+    return json.dumps(wrapped_version, indent=2)

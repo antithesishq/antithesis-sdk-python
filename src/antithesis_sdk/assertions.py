@@ -361,11 +361,15 @@ def assert_raw(
         assert_id,
     )
 
-assertion_catalog = os.getenv(ASSERTION_CATALOG_ENV_VAR)
-if assertion_catalog is not None:
-    execfile(assertion_catalog)
-    # cat_file = open(assertion_catalog, "r", encoding="utf-8")
-    # data_bytes = cat_file.read()
+
+# ----------------------------------------------------------------------
+# Evaluate once - on load
+# ----------------------------------------------------------------------
+_CATALOG = os.getenv(CATALOG_ENV_VAR)
+if _CATALOG is not None:
+    with open(_CATALOG, "r", encoding="utf-8") as f:
+        exec(f.read())
+
 
 # ----------------------------------------------------------------------
 # For project.scripts support

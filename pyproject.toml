@@ -37,15 +37,8 @@ addx = "antithesis_sdk.assertions:add"
 # randomx
 randomx = "antithesis_sdk.random:cmd_get_random"
 
-# versionx
-versionx = "antithesis_sdk.lifecycle:cmd_version"
-
 # eventx
 eventx = "antithesis_sdk.lifecycle:cmd_event"
 
 # setup
 setupx = "antithesis_sdk.lifecycle:cmd_setup"
-
-# [tool.pydeploy]
-# exclude_libs = []
-
