@@ -20,6 +20,7 @@ from .sdk_constants import (
     ANTITHESIS_PROTOCOL_VERSION,
     # LOCAL_OUTPUT_ENV_VAR,
     ASSERTION_CATALOG_ENV_VAR,
+    ASSERTION_CATALOG_NAME,
 )
 
 def dispatch_output(json: str):

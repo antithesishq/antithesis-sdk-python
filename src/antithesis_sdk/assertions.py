@@ -42,16 +42,25 @@ details are evaluated at runtime.
 
 """
 
-from typing import Any, Mapping, Union, Dict, cast
-from inspect import stack
+from ast import literal_eval
+from typing import Any, Mapping, Union, Dict, Optional, cast
+from importlib.util import find_spec, module_from_spec
+import inspect
+
 import json
 import os
+from pathlib import Path
+import re
 import sys
 
 from .assertinfo import AssertInfo, AssertionDisplay
 from .location import get_location_info
 from .tracking import assert_tracker, get_tracker_entry
-from ._internal import dispatch_output, ASSERTION_CATALOG_ENV_VAR
+from ._internal import (
+        dispatch_output, 
+        ASSERTION_CATALOG_ENV_VAR,
+        ASSERTION_CATALOG_NAME,
+)
 
 WAS_HIT = True  # Assertion was reached at runtime
 MUST_BE_HIT = True  # Assertion must be reached at least once
@@ -59,6 +68,8 @@ OPTIONALLY_HIT = False  # Assertion may or may not be reachable
 ASSERTING_TRUE = True  # Assertion condition should be True
 ASSERTING_FALSE = True  # Assertion condition should be False
 
+MODULE_NAME_TEXT = 'module_name' # Tag to indicate a python module containing assertions
+MAX_EXCERPT_WIDTH = 40 # Maximum length of an excerpt used fo error reporting
 
 def emit_assert(assert_info: AssertInfo) -> None:
     """Formats and forwards the assertion provided to the
@@ -163,7 +174,7 @@ def always(
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = stack()
+    all_frames = inspect.stack()
     this_frame = all_frames[1]
     location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
@@ -196,7 +207,7 @@ def always_or_unreachable(
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = stack()
+    all_frames = inspect.stack()
     this_frame = all_frames[1]
     location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
@@ -226,7 +237,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = stack()
+    all_frames = inspect.stack()
     this_frame = all_frames[1]
     location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
@@ -256,7 +267,7 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = stack()
+    all_frames = inspect.stack()
     this_frame = all_frames[1]
     location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
@@ -286,7 +297,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = stack()
+    all_frames = inspect.stack()
     this_frame = all_frames[1]
     location_info = get_location_info(this_frame)
     assert_id = make_key(message, location_info)
@@ -361,29 +372,123 @@ def assert_raw(
         assert_id,
     )
 
+def _readlines(fname: str, verbose=False) -> list[str]:
+    all_lines = []
+    with open(fname) as f:
+        for line in f:
+            if verbose:
+                print(line, end="")
+            all_lines.append(line)
+    return all_lines
+
+def _get_subdirs(dir_path: str) -> list[str]:
+    if not os.path.isdir(dir_path):
+        return []
+    walk_results = next(os.walk(dir_path))
+    return walk_results[1] # directories at index=1, files at index=2
+
+
+def _get_module_list(file_path: str) -> list[str]:
+    """Reads all lines in file_path, looking for
+    any comment lines that contain:
+    module_name = '<module_name>'
+    parse these lines and return a list of the
+    module names found,
+    """
+
+    listed_modules = []
+    rx = re.compile(r"^\s*#\s*module_name\s*=\s*(\S*)\s*")
+    lines = _readlines(file_path)
+    for line in lines:
+        maybe_match = rx.match(line)
+        if maybe_match is not None:
+            matched_repr = maybe_match.group(1) 
+            module_name = literal_eval(matched_repr)
+            listed_modules.append(module_name)
+    return listed_modules
+
+
+def get_grade(py_catalog_path: str, module_list: list[str]) -> float:
+    """Read and parse the python source catalog in `py_catalog_path`
+    to obtain a module_list.  Count the number of modules that can 
+    be loaded from this list, and return the overall grade of loadable 
+    modules found in the range 0.0 to 1.0
+    """
+    num_modules = float(len(module_list))
+    num_found = 0
+    with open(catalog_path, "r") as fp:
+        for module_name in module_list:
+            this_spec = find_spec(module_name)
+            my_module = module_from_spec(this_spec) 
+            if this_spec is not None:
+                num_found = num_found + 1
+    return num_found/num_modules
+
+def _get_instrumentation_folder(from_path: str) -> Optional[str]:
+    """Determines which subfolder of `from_path` contains the
+    assertion catalog that corresponds to the app/service
+    in this python instance that is using the Antithesis SDK
+    """
+    subdirs = _get_subdirs(from_path)
+    lx = len(subdirs)
+    if lx < 2:
+        return subdirs[0] if lx == 1 else None
+
+    selected_grade = 0.0
+    selected_subdir = None 
+    for subdir in subdirs:
+        py_catalog_path = os.path.join(from_path, subdir, f"{ASSERTION_CATALOG_NAME}.py")
+        module_list = _get_module_list(py_catalog_path)
+        if len(module_list) > 0:
+            print(f"Nonempty catalog found in {py_catalog_path!r}")
+            print(f"{module_list = }")
+            grade = _get_grade(py_catalog_path, module_list)
+            if grade > highest_grade:
+                selected_grade = grade
+                selected_subdir = subdir 
+    return selected_subdir
+
+def _process_JSON_catalog(file_path: str) -> bool:
+    with open(file_path, "r", encoding="utf-8") as f:
+        idx = 0
+        lines = f.readlines()
+        for line in lines:
+             idx = idx + 1
+             try:
+                the_dict = json.loads(line)
+                assert_impl(
+                   the_dict['condition'],
+                   the_dict['message'],
+                   the_dict['details'],
+                   the_dict['location_info'],
+                   the_dict['hit'],
+                   the_dict['must_hit'],
+                   the_dict['assert_type'],
+                   the_dict['display_type'],
+                   the_dict['id']
+                )
+             except json.JSONDecodeError:
+                print(f"Unable to parse as JSON:")
+                lx = len(line)
+                excerpt = line if lx < MAX_EXCERPT_WIDTH else line[0:MAX_EXCERPT_WIDTH] + "..."                    
+                print(f"[{idx}] {excerpt!r}")
 
 # ----------------------------------------------------------------------
 # Evaluate once - on load
-# ----------------------------------------------------------------------
+# -------------------------------------------------------
 _CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
-    with open(_CATALOG, "r", encoding="utf-8") as f:
-        # exec(f.read())
-        lines = f.readlines()
-        for line in lines:
-             the_dict = json.loads(line)
-             assert_impl(
-                the_dict['condition'],
-                the_dict['message'],
-                the_dict['details'],
-                the_dict['location_info'],
-                the_dict['hit'],
-                the_dict['must_hit'],
-                the_dict['assert_type'],
-                the_dict['display_type'],
-                the_dict['id']
-             )
+    cat_path = Path(_CATALOG)
+    if cat_path.is_dir():
 
+        instrumentation_folder = _get_instrumentation_folder(_CATALOG)
+        instrumentation_path = os.path.join(_CATALOG, instrumentation_folder)
+        json_catalog_path = os.path.join(instrumentation_path, f"{ASSERTION_CATALOG_NAME}.json")
+        _process_JSON_catalog(json_catalog_path)
+
+    else:
+        print(f"Environment variable {ASSERTION_CATALOG_ENV_VAR!r} must refer to an accessible directory")
+        print(f"Ignoring it because it is set to {cat_path!r}")
 
 # ----------------------------------------------------------------------
 # For project.scripts support
