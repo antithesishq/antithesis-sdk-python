@@ -392,11 +392,19 @@ def _get_subdirs(dir_path: str) -> list[str]:
 
 
 def _get_module_list(file_path: str) -> list[str]:
-    """Reads all lines in file_path, looking for
-    any comment lines that contain:
-    module_name = '<module_name>'
-    parse these lines and return a list of the
-    module names found,
+    """Reads all lines in file_path, looking for any comment
+    lines that contain:
+    `module_name = '<module_name>'`
+    Parse these lines and return a list of the module names
+    found.  This list will be used to identify what python
+    modules contained assertions at instrumentation time.
+    In cases where there are more than one python app/service
+    that can be run in a container, these apps/services will
+    each have separate assertion catalogs. Knowing what python
+    modules should be importable at runtime, will determine
+    which specific assertion catalog should be associated with
+    an app/service - and that catalog will be registered with
+    the fuzzer.
     """
 
     listed_modules = []
@@ -428,7 +436,23 @@ def _get_grade(module_list: list[str]) -> float:
 def _get_instrumentation_folder(from_path: str) -> Optional[str]:
     """Determines which subfolder of `from_path` contains the
     assertion catalog that corresponds to the app/service
-    in this python instance that is using the Antithesis SDK
+    in this python instance that is using the Antithesis SDK.
+    In cases where there are more than one python app/service
+    that can be run in a container, these apps/services will
+    each have separate assertion catalogs.  All such apps
+    and services that are instrumented will write instrumentation
+    generated files to a subdirectory named `python-xxxxxxxxxxxx`
+    where `xxxxxxxxxxxx` represents the generated module name
+    used in the `xxxxxxxxxxxx.sym.tsv` file.  Each of these
+    subdirectories will have a common parent directory, which
+    is provided at instrumentation time, using the `-p` command
+    line argument.  In addition to the symbols file, each
+    subdirectory will contain `assertion_catalog.py` and
+    `assertion_catalog.json`.  The `assertion_catalog.py` file
+    provides a more readable version of the catalog data, than
+    is found in the `assertion_catalog.json` file.  It is
+    safer to process the assertion catalog by read/parse json
+    than it is to import/exec the `assertion_catalog.py` file.
     """
     subdirs = _get_subdirs(from_path)
     lx = len(subdirs)

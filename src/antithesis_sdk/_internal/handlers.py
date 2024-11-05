@@ -21,7 +21,7 @@ from .sdk_constants import (
     ANTITHESIS_PROTOCOL_VERSION,
 )
 
-VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
+_VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
 
 
 class Handler(ABC):
@@ -110,7 +110,7 @@ class NoopHandler(Handler):
         return False
 
 
-CDEF_VOIDSTAR = """\
+_CDEF_VOIDSTAR = """\
 uint64_t fuzz_get_random();
 void fuzz_json_data(const char* message, size_t length);
 void fuzz_flush();
@@ -127,10 +127,10 @@ class VoidstarHandler(Handler):
 
     def __init__(self):
         self._ffi = cffi.FFI()
-        self._ffi.cdef(CDEF_VOIDSTAR)
+        self._ffi.cdef(_CDEF_VOIDSTAR)
         self._lib = None
         try:
-            self._lib = self._ffi.dlopen(VOIDSTAR_PATH)
+            self._lib = self._ffi.dlopen(_VOIDSTAR_PATH)
         except OSError:
             self._lib = None
 
