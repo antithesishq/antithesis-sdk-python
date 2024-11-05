@@ -6,13 +6,14 @@ and No-Op handlers.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import cffi  # type: ignore[import-untyped]
 from io import TextIOWrapper
 import json
 import os
 import random
 import sys
 from typing import Optional
+
+import cffi  # type: ignore[import-untyped]
 
 from .sdk_constants import (
     LOCAL_OUTPUT_ENV_VAR,
@@ -69,7 +70,9 @@ class LocalHandler(Handler):
         if filename is None:
             return None
         try:
-            file = open(filename, "w", encoding="utf-8")
+            file = open(
+                filename, "w", encoding="utf-8"
+            )  # pylint: disable=consider-using-with
         except IOError:
             return None
         return LocalHandler(filename, file)
@@ -152,6 +155,7 @@ class VoidstarHandler(Handler):
 
 def _setup_handler() -> Handler:
     return VoidstarHandler.get() or LocalHandler.get() or NoopHandler.get()
+
 
 def _version_message() -> str:
     """Format the version info for this SDK"""

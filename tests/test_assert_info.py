@@ -2,14 +2,14 @@ import json
 from inspect import stack
 
 import pytest
-from antithesis_sdk.location import get_location_info
-from antithesis_sdk.assertinfo import AssertInfo, AssertionDisplay 
+from antithesis_sdk._location import _get_location_info
+from antithesis_sdk._assertinfo import AssertInfo, AssertionDisplay 
 
 @pytest.fixture
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]
-    return get_location_info(this_frame)
+    return _get_location_info(this_frame)
 
 @pytest.fixture
 def details_example():

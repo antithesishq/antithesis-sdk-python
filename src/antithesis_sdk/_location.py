@@ -17,7 +17,7 @@ def _get_class_name(frame_info: Any) -> str:
     return class_name
 
 
-def get_location_info(frame_info: Optional[FrameInfo]) -> Dict[str, Union[str, int]]:
+def _get_location_info(frame_info: Optional[FrameInfo]) -> Dict[str, Union[str, int]]:
     """Provides a dictionary containing source code info obtained from assertion callers.
 
     Args:

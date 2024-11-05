@@ -23,6 +23,7 @@ from .sdk_constants import (
     ASSERTION_CATALOG_NAME,
 )
 
+
 def dispatch_output(json: str):
     """dispatch_output forwards the provided string
     to the active HANDLER.  There is no validation that

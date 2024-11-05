@@ -7,7 +7,7 @@ reached.
 from typing import Mapping, Any
 import json
 import sys
-from ._internal import dispatch_output, ANTITHESIS_SDK_VERSION
+from antithesis_sdk._internal import dispatch_output
 
 
 def setup_complete(details: Mapping[str, Any]) -> None:
@@ -38,7 +38,8 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     wrapped_event = {event_name: details}
     dispatch_output(json.dumps(wrapped_event, indent=2))
 
-def cmd_event():
+
+def _cmd_event():
     """Smoke-test for send_event().
 
     Examples:
@@ -65,7 +66,7 @@ def cmd_event():
     send_event(name, {tag: val})
 
 
-def cmd_setup():
+def _cmd_setup():
     """Smoke-test for send_event().
 
     Examples:

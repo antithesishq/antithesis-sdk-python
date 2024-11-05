@@ -1,7 +1,7 @@
 import json
 from inspect import stack
 import pytest
-from antithesis_sdk.location import get_location_info
+from antithesis_sdk._location import _get_location_info
 
 @pytest.fixture
 def simple_details():
@@ -17,7 +17,7 @@ def test_simple(simple_details):
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]
-    return get_location_info(this_frame)
+    return _get_location_info(this_frame)
 
 def test_location_to_json(location_example):
     loc_info = json.dumps(location_example)
@@ -49,7 +49,7 @@ class SomeClass:
 def location_with_class_example():
     some_class = SomeClass(217)
     that_frame = some_class.get_frame_info()
-    return get_location_info(that_frame)
+    return _get_location_info(that_frame)
 
 def test_location_has_class(location_with_class_example):
     loc_info = json.dumps(location_with_class_example)
