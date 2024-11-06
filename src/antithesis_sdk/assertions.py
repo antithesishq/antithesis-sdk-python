@@ -8,13 +8,8 @@ This module provides functions for basic assertions:
     * unreachable
 
 This module enables defining [test properties] about your program or [workload].
-It is part of the [Antithesis Go SDK], which enables Go applications to integrate
+It is part of the [Antithesis Python SDK], which enables Python applications to integrate
 with the [Antithesis platform].
-
-Code that uses this package should be instrumented with the [antithesis-go-generator]
-utility. This step is required for the Always, Sometime, and Reachable methods.
-It is not required for the Unreachable and AlwaysOrUnreachable methods, but it will
-improve the experience of using them.
 
 These functions are no-ops with minimal performance overhead when called outside of
 the Antithesis environment. However, if the environment variable ANTITHESIS_SDK_LOCAL_OUTPUT
