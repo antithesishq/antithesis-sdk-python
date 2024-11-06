@@ -17,7 +17,7 @@ environment, where they will fall back on values from random.getrandbits().
 """
 
 from typing import List, Any
-from ._internal import dispatch_random
+from antithesis_sdk._internal import dispatch_random
 
 
 def get_random() -> int:
@@ -51,7 +51,7 @@ def random_choice(things: List[Any]) -> Any:
     return things[idx]
 
 
-def cmd_get_random():
+def _cmd_get_random():
     """Smoke-test for fuzz_get_random().
 
     Examples:

@@ -10,8 +10,8 @@ keywords = ["antithesis", "sdk", "autonomous", "testing"]
 verbose = true
 
 [tool.mypy]
-files = "src/**/*.py"
-disable_error_code = "import-untyped"
+files = "src/antithesis_sdk/*.py"
+disable_error_code = "import-untyped, import-not-found"
 
 [tool.pylint.messages_control]
 # disable = "C0114,C0115,C0116"
@@ -26,26 +26,19 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 
 # always "message text" t t f t f 
-always = "antithesis_sdk.assertions:cmd_always"
+always = "antithesis_sdk.assertions:_cmd_always"
 
 # sometimes "message text" t t f t f 
-sometimes = "antithesis_sdk.assertions:cmd_sometimes"
+sometimes = "antithesis_sdk.assertions:_cmd_sometimes"
 
 # addx 10 17
-addx = "antithesis_sdk.assertions:add"
+addx = "antithesis_sdk.assertions:_add"
 
 # randomx
-randomx = "antithesis_sdk.random:cmd_get_random"
-
-# versionx
-versionx = "antithesis_sdk.lifecycle:cmd_version"
+randomx = "antithesis_sdk.random:_cmd_get_random"
 
 # eventx
-eventx = "antithesis_sdk.lifecycle:cmd_event"
+eventx = "antithesis_sdk.lifecycle:_cmd_event"
 
 # setup
-setupx = "antithesis_sdk.lifecycle:cmd_setup"
-
-# [tool.pydeploy]
-# exclude_libs = []
-
+setupx = "antithesis_sdk.lifecycle:_cmd_setup"

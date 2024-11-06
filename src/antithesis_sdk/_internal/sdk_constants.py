@@ -6,3 +6,8 @@ import importlib.metadata
 
 ANTITHESIS_PROTOCOL_VERSION: str = "1.0.0"
 ANTITHESIS_SDK_VERSION: str = importlib.metadata.version("antithesis-sdk")
+
+LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
+ASSERTION_CATALOG_ENV_VAR: str = "ANTITHESIS_ASSERTION_CATALOG"
+
+ASSERTION_CATALOG_NAME: str = "assertion_catalog"

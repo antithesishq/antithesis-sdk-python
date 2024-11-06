@@ -6,14 +6,22 @@ and No-Op handlers.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from io import TextIOWrapper
+import json
 import os
 import random
+import sys
+from typing import Optional
 
 import cffi  # type: ignore[import-untyped]
 
-LOCAL_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
-VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
+from .sdk_constants import (
+    LOCAL_OUTPUT_ENV_VAR,
+    ANTITHESIS_SDK_VERSION,
+    ANTITHESIS_PROTOCOL_VERSION,
+)
+
+_VOIDSTAR_PATH = "/usr/lib/libvoidstar.so"
 
 
 class Handler(ABC):
@@ -51,7 +59,7 @@ class LocalHandler(Handler):
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
 
-    def __init__(self, filename: str, file):
+    def __init__(self, filename: str, file: TextIOWrapper):
         abs_path = os.path.abspath(filename)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
         self.file = file
@@ -62,7 +70,9 @@ class LocalHandler(Handler):
         if filename is None:
             return None
         try:
-            file = open(filename, "w", encoding="utf-8")
+            file = open(
+                filename, "w", encoding="utf-8"
+            )  # pylint: disable=consider-using-with
         except IOError:
             return None
         return LocalHandler(filename, file)
@@ -100,7 +110,7 @@ class NoopHandler(Handler):
         return False
 
 
-CDEF_VOIDSTAR = """\
+_CDEF_VOIDSTAR = """\
 uint64_t fuzz_get_random();
 void fuzz_json_data(const char* message, size_t length);
 void fuzz_flush();
@@ -117,10 +127,10 @@ class VoidstarHandler(Handler):
 
     def __init__(self):
         self._ffi = cffi.FFI()
-        self._ffi.cdef(CDEF_VOIDSTAR)
+        self._ffi.cdef(_CDEF_VOIDSTAR)
         self._lib = None
         try:
-            self._lib = self._ffi.dlopen(VOIDSTAR_PATH)
+            self._lib = self._ffi.dlopen(_VOIDSTAR_PATH)
         except OSError:
             self._lib = None
 
@@ -145,3 +155,19 @@ class VoidstarHandler(Handler):
 
 def _setup_handler() -> Handler:
     return VoidstarHandler.get() or LocalHandler.get() or NoopHandler.get()
+
+
+def _version_message() -> str:
+    """Format the version info for this SDK"""
+    language_info = {
+        "name": "Python",
+        "version": sys.version,
+    }
+
+    version_info = {
+        "language": language_info,
+        "sdk_version": ANTITHESIS_SDK_VERSION,
+        "protocol_version": ANTITHESIS_PROTOCOL_VERSION,
+    }
+    wrapped_version = {"antithesis_sdk": version_info}
+    return json.dumps(wrapped_version, indent=2)

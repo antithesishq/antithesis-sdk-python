@@ -5,18 +5,23 @@ mechanism for choosing and initializing the
 active handler
 """
 
+import os
+
 from .handlers import (
     Handler,
     LocalHandler,
     NoopHandler,
     VoidstarHandler,
     _setup_handler,
-    LOCAL_OUTPUT_ENV_VAR,
+    _version_message,
 )
-from .sdk_constants import ANTITHESIS_SDK_VERSION, ANTITHESIS_PROTOCOL_VERSION
-
-
-_HANDLER: Handler = _setup_handler()
+from .sdk_constants import (
+    ANTITHESIS_SDK_VERSION,
+    ANTITHESIS_PROTOCOL_VERSION,
+    # LOCAL_OUTPUT_ENV_VAR,
+    ASSERTION_CATALOG_ENV_VAR,
+    ASSERTION_CATALOG_NAME,
+)
 
 
 def dispatch_output(json: str):
@@ -39,3 +44,10 @@ def dispatch_random() -> int:
         int: A random 64 bit int
     """
     return _HANDLER.random()
+
+
+# ----------------------------------------------------------------------
+# Evaluate once - on load
+# ----------------------------------------------------------------------
+_HANDLER: Handler = _setup_handler()
+_HANDLER.output(_version_message())
