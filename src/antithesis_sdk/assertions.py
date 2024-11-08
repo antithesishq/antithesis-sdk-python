@@ -45,13 +45,13 @@ import inspect
 import json
 import os
 from pathlib import Path
-import re
 import sys
 
 from antithesis_sdk._internal import (
     dispatch_output,
     ASSERTION_CATALOG_ENV_VAR,
     ASSERTION_CATALOG_NAME,
+    COVERAGE_MODULE_LIST,
 )
 from ._assertinfo import AssertInfo, AssertionDisplay
 from ._location import _get_location_info
@@ -387,12 +387,9 @@ def _get_subdirs(dir_path: str) -> list[str]:
 
 
 def _get_module_list(file_path: str) -> list[str]:
-    """Reads all lines in file_path, looking for any comment
-    lines that contain:
-    `module_name = '<module_name>'`
-    Parse these lines and return a list of the module names
-    found.  This list will be used to identify what python
-    modules contained assertions at instrumentation time.
+    """Reads and parses the JSON representation of a module
+    list.  This list will be used to identify what python
+    modules were processed at instrumentation time.
     In cases where there are more than one python app/service
     that can be run in a container, these apps/services will
     each have separate assertion catalogs. Knowing what python
@@ -401,18 +398,10 @@ def _get_module_list(file_path: str) -> list[str]:
     an app/service - and that catalog will be registered with
     the fuzzer.
     """
-
-    listed_modules = []
-    rx = re.compile(r"^\s*#\s*module_name\s*=\s*(\S*)\s*")
-    lines = _readlines(file_path)
-    for line in lines:
-        maybe_match = rx.match(line)
-        if maybe_match is not None:
-            matched_repr = maybe_match.group(1)
-            module_name = literal_eval(matched_repr)
-            listed_modules.append(module_name)
-    return listed_modules
-
+    with open(file_path, "r", encoding="utf-8") as f:
+        json_text = f.read()
+        mod_list = json.loads(json_text)
+        return mod_list['module_list']
 
 def _get_grade(module_list: list[str]) -> float:
     """Count the number of modules that can be loaded
@@ -457,12 +446,12 @@ def _get_instrumentation_folder(from_path: str) -> Optional[str]:
     selected_grade = 0.0
     selected_subdir = None
     for subdir in subdirs:
-        py_catalog_path = os.path.join(
-            from_path, subdir, f"{ASSERTION_CATALOG_NAME}.py"
+        py_module_list_path = os.path.join(
+            from_path, subdir, f"{COVERAGE_MODULE_LIST}.json"
         )
-        module_list = _get_module_list(py_catalog_path)
+        module_list = _get_module_list(py_module_list_path)
         if len(module_list) > 0:
-            print(f"Nonempty catalog found in {py_catalog_path!r}")
+            print(f"Nonempty module list found in {py_module_list_path!r}")
             print(f"{module_list = }")
             grade = _get_grade(module_list)
             if grade > selected_grade:
