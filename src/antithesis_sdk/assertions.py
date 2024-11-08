@@ -487,7 +487,6 @@ _CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
     cat_path = Path(_CATALOG)
     if cat_path.is_dir():
-
         instrumentation_folder = _get_instrumentation_folder(_CATALOG)
         if instrumentation_folder is not None:
             instrumentation_path = os.path.join(_CATALOG, instrumentation_folder)
