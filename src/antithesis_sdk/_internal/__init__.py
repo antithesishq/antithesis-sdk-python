@@ -21,6 +21,7 @@ from .sdk_constants import (
     # LOCAL_OUTPUT_ENV_VAR,
     ASSERTION_CATALOG_ENV_VAR,
     ASSERTION_CATALOG_NAME,
+    COVERAGE_MODULE_LIST,
 )
 
 
