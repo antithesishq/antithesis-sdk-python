@@ -70,9 +70,7 @@ class LocalHandler(Handler):
         if filename is None:
             return None
         try:
-            file = open(
-                filename, "w", encoding="utf-8"
-            )  # pylint: disable=consider-using-with
+            file = open(filename, "w", encoding="utf-8")  # pylint: disable=consider-using-with
         except IOError:
             return None
         return LocalHandler(filename, file)

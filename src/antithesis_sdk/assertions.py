@@ -37,7 +37,6 @@ details are evaluated at runtime.
 
 """
 
-from ast import literal_eval
 from typing import Any, Mapping, Union, Dict, Optional, cast
 from importlib.util import find_spec
 import inspect
@@ -369,16 +368,6 @@ def assert_raw(
     )
 
 
-def _readlines(fname: str, verbose=False) -> list[str]:
-    all_lines = []
-    with open(fname, "r", encoding="utf-8") as f:
-        for line in f:
-            if verbose:
-                print(line, end="")
-            all_lines.append(line)
-    return all_lines
-
-
 def _get_subdirs(dir_path: str) -> list[str]:
     if not os.path.isdir(dir_path):
         return []
@@ -401,7 +390,8 @@ def _get_module_list(file_path: str) -> list[str]:
     with open(file_path, "r", encoding="utf-8") as f:
         json_text = f.read()
         mod_list = json.loads(json_text)
-        return mod_list['module_list']
+        return mod_list["module_list"]
+
 
 def _get_grade(module_list: list[str]) -> float:
     """Count the number of modules that can be loaded
