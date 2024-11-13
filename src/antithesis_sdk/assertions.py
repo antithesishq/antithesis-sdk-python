@@ -24,7 +24,7 @@ but they can be quite useful even outside Antithesis.
 
 Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
-property per unique message and this test property will be named "\<message\>" in
+property per unique message and this test property will be named "\\<message\\>" in
 the [triage report](https://antithesis.com/docs/reports/triage/). Different
 assertions in different parts of the code should have different messages, but
 the same assertion should always have the same message even if it is moved to
