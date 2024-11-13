@@ -263,7 +263,7 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
     this_frame = all_frames[1]
     location_info = _get_location_info(this_frame)
     assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS
+    display_type = AssertionDisplay.REACHABLE
     assert_type = display_type.assert_type()
     assert_impl(
         _ASSERTING_TRUE,
@@ -294,7 +294,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
     this_frame = all_frames[1]
     location_info = _get_location_info(this_frame)
     assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS
+    display_type = AssertionDisplay.UNREACHABLE
     assert_type = display_type.assert_type()
     assert_impl(
         _ASSERTING_FALSE,
