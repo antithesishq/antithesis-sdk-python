@@ -7,37 +7,38 @@ This module provides functions for basic assertions:
     * reachable
     * unreachable
 
-This module enables defining [test properties] about your program or [workload].
-It is part of the [Antithesis Python SDK], which enables Python applications to integrate
-with the [Antithesis platform].
+This module enables defining [properties](https://antithesis.com/docs/using_antithesis/properties/) 
+about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
+It is part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
+which enables Python applications to integrate with the 
+[Antithesis platform](https://antithesis.com/).
 
 These functions are no-ops with minimal performance overhead when called outside of
 the Antithesis environment. However, if the environment variable ANTITHESIS_SDK_LOCAL_OUTPUT
-is set, these functions will log to the file pointed to by that variable using a
-structured JSON format defined [here]. This allows you to make use of the Antithesis
-assertions package in your regular testing, or even in production. In particular,
-very few assertions frameworks offer a convenient way to define [Sometimes assertions],
+is set, these functions will log to the file pointed to by that variable using a structured
+JSON format defined [here](https://antithesis.com/docs/using_antithesis/sdk/fallback/).
+This allows you to make use of the Antithesis assertions package in your regular testing,
+or even in production. In particular, very few assertions frameworks offer a convenient way to 
+define [Sometimes assertions](https://antithesis.com/docs/best_practices/sometimes_assertions/), 
 but they can be quite useful even outside Antithesis.
 
-Each function in this package takes a parameter called message, which is a human
+Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
-property per unique message and this test property will be named "<message>" in
-the [triage report].
+property per unique message and this test property will be named "\\<message\\>" in
+the [triage report](https://antithesis.com/docs/reports/triage/). Different
+assertions in different parts of the code should have different messages, but
+the same assertion should always have the same message even if it is moved to
+a different file.
 
-This test property either passes or fails, which depends upon the evaluation of every
-assertion that shares its message. Different assertions in different parts of the code
-should have different message, but the same assertion should always have the same
-message even if it is moved to a different file.
-
-Each function also takes a parameter called details, which is a key-value map of
+Each function also takes a parameter called `details`, which is a key-value map of
 optional additional information provided by the user to add context for assertion
-failures. The information that is logged will appear in the [triage report], under
+failures. The information logged will appear in the 
+[triage report](https://antithesis.com/docs/reports/triage/), under
 the details section of the corresponding property. Normally the values passed to
 details are evaluated at runtime.
 
 """
 
-from ast import literal_eval
 from typing import Any, Mapping, Union, Dict, Optional, cast
 from importlib.util import find_spec
 import inspect
@@ -45,13 +46,13 @@ import inspect
 import json
 import os
 from pathlib import Path
-import re
 import sys
 
 from antithesis_sdk._internal import (
     dispatch_output,
     ASSERTION_CATALOG_ENV_VAR,
     ASSERTION_CATALOG_NAME,
+    COVERAGE_MODULE_LIST,
 )
 from ._assertinfo import AssertInfo, AssertionDisplay
 from ._location import _get_location_info
@@ -89,7 +90,7 @@ def assert_impl(
     display_type: str,
     assert_id: str,
 ):
-    """Composes, tracks and emits assertions that should be forwarded
+    """Composes, tracks, and emits assertions that should be forwarded
     to the configured handler.
 
     Args:
@@ -264,7 +265,7 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
     this_frame = all_frames[1]
     location_info = _get_location_info(this_frame)
     assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS
+    display_type = AssertionDisplay.REACHABLE
     assert_type = display_type.assert_type()
     assert_impl(
         _ASSERTING_TRUE,
@@ -295,7 +296,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
     this_frame = all_frames[1]
     location_info = _get_location_info(this_frame)
     assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS
+    display_type = AssertionDisplay.UNREACHABLE
     assert_type = display_type.assert_type()
     assert_impl(
         _ASSERTING_FALSE,
@@ -369,16 +370,6 @@ def assert_raw(
     )
 
 
-def _readlines(fname: str, verbose=False) -> list[str]:
-    all_lines = []
-    with open(fname, "r", encoding="utf-8") as f:
-        for line in f:
-            if verbose:
-                print(line, end="")
-            all_lines.append(line)
-    return all_lines
-
-
 def _get_subdirs(dir_path: str) -> list[str]:
     if not os.path.isdir(dir_path):
         return []
@@ -387,12 +378,9 @@ def _get_subdirs(dir_path: str) -> list[str]:
 
 
 def _get_module_list(file_path: str) -> list[str]:
-    """Reads all lines in file_path, looking for any comment
-    lines that contain:
-    `module_name = '<module_name>'`
-    Parse these lines and return a list of the module names
-    found.  This list will be used to identify what python
-    modules contained assertions at instrumentation time.
+    """Reads and parses the JSON representation of a module
+    list.  This list will be used to identify what python
+    modules were processed at instrumentation time.
     In cases where there are more than one python app/service
     that can be run in a container, these apps/services will
     each have separate assertion catalogs. Knowing what python
@@ -401,17 +389,10 @@ def _get_module_list(file_path: str) -> list[str]:
     an app/service - and that catalog will be registered with
     the fuzzer.
     """
-
-    listed_modules = []
-    rx = re.compile(r"^\s*#\s*module_name\s*=\s*(\S*)\s*")
-    lines = _readlines(file_path)
-    for line in lines:
-        maybe_match = rx.match(line)
-        if maybe_match is not None:
-            matched_repr = maybe_match.group(1)
-            module_name = literal_eval(matched_repr)
-            listed_modules.append(module_name)
-    return listed_modules
+    with open(file_path, "r", encoding="utf-8") as f:
+        json_text = f.read()
+        mod_list = json.loads(json_text)
+        return mod_list["module_list"]
 
 
 def _get_grade(module_list: list[str]) -> float:
@@ -457,12 +438,12 @@ def _get_instrumentation_folder(from_path: str) -> Optional[str]:
     selected_grade = 0.0
     selected_subdir = None
     for subdir in subdirs:
-        py_catalog_path = os.path.join(
-            from_path, subdir, f"{ASSERTION_CATALOG_NAME}.py"
+        py_module_list_path = os.path.join(
+            from_path, subdir, f"{COVERAGE_MODULE_LIST}.json"
         )
-        module_list = _get_module_list(py_catalog_path)
+        module_list = _get_module_list(py_module_list_path)
         if len(module_list) > 0:
-            print(f"Nonempty catalog found in {py_catalog_path!r}")
+            print(f"Nonempty module list found in {py_module_list_path!r}")
             print(f"{module_list = }")
             grade = _get_grade(module_list)
             if grade > selected_grade:
@@ -508,7 +489,6 @@ _CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
     cat_path = Path(_CATALOG)
     if cat_path.is_dir():
-
         instrumentation_folder = _get_instrumentation_folder(_CATALOG)
         if instrumentation_folder is not None:
             instrumentation_path = os.path.join(_CATALOG, instrumentation_folder)
