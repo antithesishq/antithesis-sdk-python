@@ -32,7 +32,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
 
 def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     """send_event indicates to Antithesis that a certain event
-    has been reached. It provides more information about the 
+    has been reached. It provides more information about the
     ordering of events during Antithesis test runs.
 
     Args:
