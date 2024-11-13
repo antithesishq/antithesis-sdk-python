@@ -7,31 +7,33 @@ This module provides functions for basic assertions:
     * reachable
     * unreachable
 
-This module enables defining [test properties] about your program or [workload].
-It is part of the [Antithesis Python SDK], which enables Python applications to integrate
-with the [Antithesis platform].
+This module enables defining [properties](https://antithesis.com/docs/using_antithesis/properties/) 
+about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
+It is part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
+which enables Python applications to integrate with the 
+[Antithesis platform](https://antithesis.com/).
 
 These functions are no-ops with minimal performance overhead when called outside of
 the Antithesis environment. However, if the environment variable ANTITHESIS_SDK_LOCAL_OUTPUT
-is set, these functions will log to the file pointed to by that variable using a
-structured JSON format defined [here]. This allows you to make use of the Antithesis
-assertions package in your regular testing, or even in production. In particular,
-very few assertions frameworks offer a convenient way to define [Sometimes assertions],
+is set, these functions will log to the file pointed to by that variable using a structured
+JSON format defined [here](https://antithesis.com/docs/using_antithesis/sdk/fallback/).
+This allows you to make use of the Antithesis assertions package in your regular testing,
+or even in production. In particular, very few assertions frameworks offer a convenient way to 
+define [Sometimes assertions](https://antithesis.com/docs/best_practices/sometimes_assertions/), 
 but they can be quite useful even outside Antithesis.
 
-Each function in this package takes a parameter called message, which is a human
+Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
-property per unique message and this test property will be named "<message>" in
-the [triage report].
+property per unique message and this test property will be named "\<message\>" in
+the [triage report](https://antithesis.com/docs/reports/triage/). Different
+assertions in different parts of the code should have different messages, but
+the same assertion should always have the same message even if it is moved to
+a different file.
 
-This test property either passes or fails, which depends upon the evaluation of every
-assertion that shares its message. Different assertions in different parts of the code
-should have different message, but the same assertion should always have the same
-message even if it is moved to a different file.
-
-Each function also takes a parameter called details, which is a key-value map of
+Each function also takes a parameter called `details`, which is a key-value map of
 optional additional information provided by the user to add context for assertion
-failures. The information that is logged will appear in the [triage report], under
+failures. The information logged will appear in the 
+[triage report](https://antithesis.com/docs/reports/triage/), under
 the details section of the corresponding property. Normally the values passed to
 details are evaluated at runtime.
 
@@ -88,7 +90,7 @@ def assert_impl(
     display_type: str,
     assert_id: str,
 ):
-    """Composes, tracks and emits assertions that should be forwarded
+    """Composes, tracks, and emits assertions that should be forwarded
     to the configured handler.
 
     Args:
