@@ -6,4 +6,4 @@
 build
 deploy_*
 dist
-result
+result*
