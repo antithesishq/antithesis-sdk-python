@@ -1,11 +1,7 @@
 Antithesis SDK for Python
 =========================
 
->__CAUTION__ - __Do NOT use__
->
->__Under active development__
-
-Start a development shell to install build tools to the working environment:
+If using nix, start a development shell to install build tools to the working environment:
 
     $ nix-shell
 
