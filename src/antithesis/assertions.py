@@ -46,9 +46,8 @@ import inspect
 import json
 import os
 from pathlib import Path
-import sys
 
-from antithesis_sdk._internal import (
+from antithesis._internal import (
     dispatch_output,
     ASSERTION_CATALOG_ENV_VAR,
     ASSERTION_CATALOG_NAME,
@@ -500,69 +499,3 @@ if _CATALOG is not None:
         PROBLEM_TEXT = "must refer to an accessible directory"
         print(f"Environment variable {ASSERTION_CATALOG_ENV_VAR!r} {PROBLEM_TEXT}")
         print(f"Ignoring it because it is set to {cat_path!r}")
-
-
-# ----------------------------------------------------------------------
-# For project.scripts support
-# ----------------------------------------------------------------------
-def _cmd_always():
-    """Smoke-test for always_or_unreachable.
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ always "this always works" t t f t f
-        HIT: AlwaysOrUnreachable 'this always works' => True
-        HIT: AlwaysOrUnreachable 'this always works' => False
-    """
-    num_args = len(sys.argv)
-    if num_args >= 3:
-        message = (sys.argv[1]).strip()
-        for i in range(2, num_args):
-            arg = sys.argv[i].lower()
-            condition = bool(arg == "t")
-            always_or_unreachable(condition, message, {})
-
-
-def _cmd_sometimes():
-    """Smoke-test for sometimes.
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ sometimes "this works at least once" t t f t f
-        HIT: Sometimes 'this works at least once' => True
-        HIT: Sometimes 'this works at least once' => False
-    """
-    num_args = len(sys.argv)
-    if num_args >= 3:
-        message = (sys.argv[1]).strip()
-        for i in range(2, num_args):
-            arg = sys.argv[i].lower()
-            condition = bool(arg == "t")
-            sometimes(condition, message, {})
-
-
-def _add():
-    """Smoke-test for adding two integers.
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ addx 55 11
-        Adding: 55 + 11 => 66
-    """
-    num1 = 0
-    num2 = 0
-    if len(sys.argv) > 1:
-        maybe_num1 = sys.argv[1]
-        if maybe_num1.isdigit():
-            num1 = int(maybe_num1)
-
-    if len(sys.argv) > 2:
-        maybe_num2 = sys.argv[2]
-        if maybe_num2.isdigit():
-            num2 = int(maybe_num2)
-
-    the_sum = num1 + num2
-    print(f"Adding: {num1} + {num2} => {the_sum}")

@@ -1,6 +1,6 @@
 import pytest
 
-from antithesis_sdk.random import get_random, random_choice
+from antithesis.random import get_random, random_choice
 
 def test_random_dist():
     all_vals = set([])

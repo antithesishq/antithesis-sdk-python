@@ -2,7 +2,7 @@ import json
 from inspect import stack
 
 import pytest
-from antithesis_sdk.assertions import (
+from antithesis.assertions import (
     always, 
     always_or_unreachable, 
     sometimes, 
