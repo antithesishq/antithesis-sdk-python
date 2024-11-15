@@ -11,8 +11,7 @@ Normally the values passed to details are evaluated at runtime.
 
 from typing import Mapping, Any
 import json
-import sys
-from antithesis_sdk._internal import dispatch_output
+from antithesis._internal import dispatch_output
 
 
 def setup_complete(details: Mapping[str, Any]) -> None:
@@ -42,48 +41,3 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
     """
     wrapped_event = {event_name: details}
     dispatch_output(json.dumps(wrapped_event, indent=2))
-
-
-def _cmd_event():
-    """Smoke-test for send_event().
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ eventx tree leaf_color green
-        FUZZ_JSON_DATA(45 bytes): {
-          "tree": {
-            "leaf_color": "green"
-          }
-        }
-        FLUSH
-    """
-    name = "tree"
-    tag = "leaf_color"
-    val = "green"
-    lx = len(sys.argv)
-    if lx > 1:
-        name = sys.argv[1]
-    if lx > 2:
-        tag = sys.argv[2]
-    if lx > 3:
-        val = sys.argv[3]
-    send_event(name, {tag: val})
-
-
-def _cmd_setup():
-    """Smoke-test for send_event().
-
-    Examples:
-        Should be executed from a devshell
-
-        >>> $ eventx tree leaf_color green
-        FUZZ_JSON_DATA(77 bytes): {
-          "antithesis_setup": {
-            "status": "complete",
-            "details": null
-          }
-        }
-        FLUSH
-    """
-    setup_complete(None)

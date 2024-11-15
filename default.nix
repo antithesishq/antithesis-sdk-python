@@ -20,8 +20,8 @@ let
     ]);
   docs = pkgs.runCommand "make_docs" {} ''
       mkdir -p $out
-      ln -s ${./src/antithesis_sdk} antithesis_sdk
-      ${sdk_with_docs}/bin/python -m pdoc -d google --no-show-source -o $out -n antithesis_sdk
+      ln -s ${./src/antithesis} antithesis_sdk
+      ${sdk_with_docs}/bin/python -m pdoc -d google --no-show-source -o $out -n antithesis
     '';
 in {
     inherit sdk docs;

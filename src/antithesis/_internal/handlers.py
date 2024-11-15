@@ -1,5 +1,5 @@
 """Handlers
-Provides implementations for the voidstar, Local,
+Provides implementations for the Voidstar, Local,
 and No-Op handlers.
 """
 
@@ -70,9 +70,8 @@ class LocalHandler(Handler):
         if filename is None:
             return None
         try:
-            file = open(
-                filename, "w", encoding="utf-8"
-            )  # pylint: disable=consider-using-with
+            # pylint: disable-next=consider-using-with
+            file = open(filename, "w", encoding="utf-8")
         except IOError:
             return None
         return LocalHandler(filename, file)

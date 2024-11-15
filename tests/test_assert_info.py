@@ -2,8 +2,8 @@ import json
 from inspect import stack
 
 import pytest
-from antithesis_sdk._location import _get_location_info
-from antithesis_sdk._assertinfo import AssertInfo, AssertionDisplay 
+from antithesis._location import _get_location_info
+from antithesis._assertinfo import AssertInfo, AssertionDisplay 
 
 @pytest.fixture
 def location_example():
