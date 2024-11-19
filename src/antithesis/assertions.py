@@ -325,10 +325,7 @@ def assert_raw(
     display_type: str,
     assert_id: str,
 ):
-    """For adapter use.  Composes, tracks and emits assertions that should be forwarded
-    to the configured handler.
-
-    This is a low-level method designed to be used by third-party frameworks.
+    """This is a low-level method designed to be used by third-party frameworks.
     Regular users of the assertions module should not call it.
 
     This is primarily intended for use by adapters from other
