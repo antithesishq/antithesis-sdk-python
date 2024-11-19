@@ -7,9 +7,9 @@ This module provides functions for basic assertions:
     * reachable
     * unreachable
 
-This module enables defining [properties](https://antithesis.com/docs/using_antithesis/properties/) 
+This module allows you to define [properties](https://antithesis.com/docs/using_antithesis/properties/) 
 about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
-It is part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
+It's part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
 which enables Python applications to integrate with the 
 [Antithesis platform](https://antithesis.com/).
 
