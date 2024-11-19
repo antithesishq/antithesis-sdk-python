@@ -1,12 +1,11 @@
-"""Lifecycle
-The lifecycle module contains functions that inform the Antithesis
+""" This module contains functions that inform the Antithesis
 environment that particular test phases or milestones have been
-reached. Both functions take the parameter details: Optional
+reached. Both functions take the parameter `details`: Optional
 additional information provided by the user to add context for
 assertion failures. 
 The information that is logged will appear in the logs section 
 of a [triage report](https://antithesis.com/docs/reports/triage/). 
-Normally the values passed to details are evaluated at runtime.
+Normally the values passed to `details` are evaluated at runtime.
 """
 
 from typing import Mapping, Any
@@ -18,7 +17,8 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     """setup_complete indicates to Antithesis that setup has completed.
     Call this function when your system and workload are fully
     initialized. After this function is called, Antithesis will
-    take a snapshot of your system and begin [injecting faults].
+    take a snapshot of your system and begin
+    [injecting faults](https://antithesis.com/docs/applications/reliability/fault_injection/).
 
     Args:
         details (Mapping[str, Any]): Additional details that are
