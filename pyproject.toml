@@ -1,6 +1,6 @@
 [project]
 name = "antithesis"
-version = "0.1.9"
+version = "0.1.10"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"

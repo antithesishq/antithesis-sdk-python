@@ -1,5 +1,4 @@
-"""Random64
-The random64 module requests both structured and unstructured randomness
+"""This module requests both structured and unstructured randomness
 from the Antithesis environment.
 
 These functions should not be used to seed a conventional PRNG, and
@@ -14,7 +13,7 @@ needs to make a decision, at the moment that you need to make the
 decision.
 
 These functions are also safe to call outside the Antithesis
-environment, where they will fall back on values from random.getrandbits().
+environment, where they will fall back on values from `random.getrandbits()`.
 """
 
 from typing import List, Any

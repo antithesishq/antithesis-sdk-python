@@ -1,20 +1,19 @@
-"""Basic Assertions
-
-This module provides functions for basic assertions:
+"""This module provides functions for basic assertions:
     * always
     * always_or_unreachable
     * sometimes
     * reachable
     * unreachable
 
-This module allows you to define [properties](https://antithesis.com/docs/using_antithesis/properties/) 
+This module allows you to define 
+[properties](https://antithesis.com/docs/using_antithesis/properties/) 
 about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
 It's part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
 which enables Python applications to integrate with the 
 [Antithesis platform](https://antithesis.com/).
 
 These functions are no-ops with minimal performance overhead when called outside of
-the Antithesis environment. However, if the environment variable ANTITHESIS_SDK_LOCAL_OUTPUT
+the Antithesis environment. However, if the environment variable `ANTITHESIS_SDK_LOCAL_OUTPUT`
 is set, these functions will log to the file pointed to by that variable using a structured
 JSON format defined [here](https://antithesis.com/docs/using_antithesis/sdk/fallback/).
 This allows you to make use of the Antithesis assertions package in your regular testing,
@@ -24,10 +23,10 @@ but they can be quite useful even outside Antithesis.
 
 Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
-property per unique message and this test property will be named "\\<message\\>" in
+property per unique `message` and this test property will be named "\\<message\\>" in
 the [triage report](https://antithesis.com/docs/reports/triage/). Different
-assertions in different parts of the code should have different messages, but
-the same assertion should always have the same message even if it is moved to
+assertions in different parts of the code should have a different `message`, but
+the same assertion should always have the same `message` even if it is moved to
 a different file.
 
 Each function also takes a parameter called `details`, which is a key-value map of
@@ -35,7 +34,7 @@ optional additional information provided by the user to add context for assertio
 failures. The information logged will appear in the 
 [triage report](https://antithesis.com/docs/reports/triage/), under
 the details section of the corresponding property. Normally the values passed to
-details are evaluated at runtime.
+`details` are evaluated at runtime.
 
 """
 
@@ -78,7 +77,7 @@ def _emit_assert(assert_info: AssertInfo) -> None:
 
 
 # pylint: disable=too-many-arguments
-def assert_impl(
+def _assert_impl(
     cond: bool,
     message: str,
     details: Mapping[str, Any],
@@ -157,7 +156,7 @@ def _make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
 
 
 def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
-    """Asserts that condition is true every time this function
+    """Asserts that `condition` is true every time this function
     is called. This test property will be viewable in the
     “Antithesis SDK: Always” group of your triage report.
 
@@ -172,7 +171,7 @@ def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
     assert_id = _make_key(message, location_info)
     display_type = AssertionDisplay.ALWAYS
     assert_type = display_type.assert_type()
-    assert_impl(
+    _assert_impl(
         condition,
         message,
         details,
@@ -188,7 +187,7 @@ def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
 def always_or_unreachable(
     condition: bool, message: str, details: Mapping[str, Any]
 ) -> None:
-    """Asserts that condition is true every time this function
+    """Asserts that `condition` is true every time this function
     is called. The corresponding test property will pass if the
     assertion is never encountered. This test property will be
     viewable in the “Antithesis SDK: Always” group of your triage
@@ -205,7 +204,7 @@ def always_or_unreachable(
     assert_id = _make_key(message, location_info)
     display_type = AssertionDisplay.ALWAYS_OR_UNREACHABLE
     assert_type = display_type.assert_type()
-    assert_impl(
+    _assert_impl(
         condition,
         message,
         details,
@@ -219,7 +218,7 @@ def always_or_unreachable(
 
 
 def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None:
-    """Asserts that condition is true at least one time that this function
+    """Asserts that `condition` is true at least one time that this function
     was called. (If the assertion is never encountered, the test property
     will therefore fail.) This test property will be viewable in the
     “Antithesis SDK: Sometimes” group.
@@ -235,7 +234,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
     assert_id = _make_key(message, location_info)
     display_type = AssertionDisplay.SOMETIMES
     assert_type = display_type.assert_type()
-    assert_impl(
+    _assert_impl(
         condition,
         message,
         details,
@@ -266,7 +265,7 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
     assert_id = _make_key(message, location_info)
     display_type = AssertionDisplay.REACHABLE
     assert_type = display_type.assert_type()
-    assert_impl(
+    _assert_impl(
         _ASSERTING_TRUE,
         message,
         details,
@@ -297,7 +296,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
     assert_id = _make_key(message, location_info)
     display_type = AssertionDisplay.UNREACHABLE
     assert_type = display_type.assert_type()
-    assert_impl(
+    _assert_impl(
         _ASSERTING_FALSE,
         message,
         details,
@@ -329,6 +328,22 @@ def assert_raw(
     """For adapter use.  Composes, tracks and emits assertions that should be forwarded
     to the configured handler.
 
+    This is a low-level method designed to be used by third-party frameworks.
+    Regular users of the assertions module should not call it.
+
+    This is primarily intended for use by adapters from other
+    diagnostic tools that intend to output Antithesis-style
+    assertions.
+
+    Be certain to provide an assertion catalog entry
+    for each assertion issued with `rawAssert()`.  Assertion catalog
+    entries are also created using `rawAssert()`, by setting the value
+    of the `hit` parameter to false.
+
+    Please refer to the general Antithesis documentation regarding the use of the
+    [Fallback SDK]("https://antithesis.com/docs/using_antithesis/sdk/fallback/assert.html")
+    for additional information.
+
     Args:
         condition (bool): Runtime condition for the basic assertion
         message (str): Unique message associated with a basic assertion
@@ -356,7 +371,7 @@ def assert_raw(
         },
     )
 
-    assert_impl(
+    _assert_impl(
         condition,
         message,
         details,
@@ -459,7 +474,7 @@ def _process_json_catalog(file_path: str):
             idx = idx + 1
             try:
                 the_dict = json.loads(line)
-                assert_impl(
+                _assert_impl(
                     the_dict["condition"],
                     the_dict["message"],
                     the_dict["details"],
