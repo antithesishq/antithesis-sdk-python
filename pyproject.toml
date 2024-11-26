@@ -1,15 +1,16 @@
 [project]
 name = "antithesis"
-version = "0.1.11"
+version = "0.1.13"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.12"
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: MIT License",
   "Operating System :: POSIX",
-  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Testing",
 ]
 keywords = ["antithesis", "sdk", "autonomous", "testing"]
@@ -17,7 +18,7 @@ keywords = ["antithesis", "sdk", "autonomous", "testing"]
 [project.urls]
 homepage = "https://antithesis.com/"
 documentation = "https://antithesis.com/docs/"
-source = "https://github.com/antithesishq/antitithesis-sdk-python"
+source = "https://github.com/antithesishq/antithesis-sdk-python"
 issues = "https://github.com/antithesishq/antithesis-sdk-python/issues"
 
 [tool.black]
