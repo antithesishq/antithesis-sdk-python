@@ -13,6 +13,7 @@ in pkgs.mkShell {
       pylint
       pytest
       setuptools
+      twine
       wheel
     ]))
   ];
