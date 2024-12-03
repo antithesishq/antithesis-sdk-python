@@ -5,11 +5,12 @@ the details for basic assertions.
 
 """
 
-from enum import StrEnum
+#from enum import StrEnum
+from enum import Enum
 from typing import Any, Mapping, Union, Dict
 
 
-class AssertType(StrEnum):
+class AssertType(str, Enum):
     """Used to differentiate type of basic assertions"""
 
     ALWAYS = "always"
@@ -17,7 +18,7 @@ class AssertType(StrEnum):
     REACHABILITY = "reachability"
 
 
-class AssertionDisplay(StrEnum):
+class AssertionDisplay(str, Enum):
     """Used to provide human readable names for basic assertions"""
 
     ALWAYS = "Always"
@@ -32,13 +33,14 @@ class AssertionDisplay(StrEnum):
         Returns:
             AssertType: The AssertType for the AssertionDisplay value
         """
-        match self:
-            case AssertionDisplay.ALWAYS | AssertionDisplay.ALWAYS_OR_UNREACHABLE:
-                the_assert_type = AssertType.ALWAYS
-            case AssertionDisplay.SOMETIMES:
-                the_assert_type = AssertType.SOMETIMES
-            case AssertionDisplay.REACHABLE | AssertionDisplay.UNREACHABLE:
-                the_assert_type = AssertType.REACHABILITY
+        if self in (AssertionDisplay.ALWAYS, AssertionDisplay.ALWAYS_OR_UNREACHABLE):
+            the_assert_type = AssertType.ALWAYS
+        elif self == AssertionDisplay.SOMETIMES:
+            the_assert_type = AssertType.SOMETIMES
+        elif self == AssertionDisplay.REACHABLE:
+            the_assert_type = AssertType.REACHABILITY
+        else: # AssertionDisplay.UNREACHABLE
+            the_assert_type = AssertType.REACHABILITY
         return the_assert_type
 
 

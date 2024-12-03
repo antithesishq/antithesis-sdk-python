@@ -1,16 +1,16 @@
-let
-  pkgs = import <nixpkgs> {};
-in pkgs.mkShell {
+{ pkgs ? (import ./../../star/build_tools/pinned_nixpkgs.nix).pkgs }:
+
+pkgs.mkShell {
   packages = [
-    pkgs.python312
-    (pkgs.python312.withPackages (ps: with ps; [
-      black
+    pkgs.python39
+    (pkgs.python39.withPackages (ps: with ps; [
+      # black
       build
       cffi
       cython
       mypy
       pdoc
-      pylint
+      # pylint
       pytest
       setuptools
       twine
