@@ -1,6 +1,6 @@
 [project]
 name = "antithesis"
-version = "0.1.14"
+version = "0.1.15"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -11,6 +11,9 @@ classifiers = [
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Testing",
 ]
 keywords = ["antithesis", "sdk", "autonomous", "testing"]

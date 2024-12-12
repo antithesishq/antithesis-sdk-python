@@ -1,4 +1,4 @@
-name: Publish to TestPyPi
+name: Publish to PyPi
 
 on:
   workflow_dispatch:
@@ -32,9 +32,9 @@ jobs:
         name: python-package-distributions
         path: dist/
 
-  publish-to-testpypi:
+  publish-to-pypi:
     name: >-
-      Publish Python 🐍 distribution 📦 to TestPyPI
+      Publish Python 🐍 distribution 📦 to PyPI
     needs:
     - build
     runs-on: ubuntu-latest
@@ -46,11 +46,10 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
-    - name: Publish distribution 📦 to TestPyPI
+    - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         verbose: true
         user: __token__
-        password: ${{secrets.TEST_PYPI_PASSWORD}}
-        repository-url: https://test.pypi.org/legacy/
+        password: ${{secrets.PYPI_PASSWORD}}
         attestations: false
