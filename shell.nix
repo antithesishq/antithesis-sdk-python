@@ -7,7 +7,6 @@ pkgs.mkShell {
       # black
       build
       cffi
-      cython
       mypy
       pdoc
       # pylint

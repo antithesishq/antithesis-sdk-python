@@ -12,7 +12,6 @@ let
       wheel
       build
       setuptools
-      cython
       cffi
     ];
   };

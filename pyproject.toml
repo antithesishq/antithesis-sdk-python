@@ -1,6 +1,6 @@
 [project]
 name = "antithesis"
-version = "0.1.15"
+version = "0.1.16"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -17,6 +17,9 @@ classifiers = [
   "Topic :: Software Development :: Testing",
 ]
 keywords = ["antithesis", "sdk", "autonomous", "testing"]
+dependencies = [
+  "cffi>=1.17.0",
+]
 
 [project.urls]
 homepage = "https://antithesis.com/"
@@ -38,5 +41,5 @@ disable_error_code = "import-untyped, import-not-found"
 pythonpath = ["src", "tests"]
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "Cython", "cffi"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
