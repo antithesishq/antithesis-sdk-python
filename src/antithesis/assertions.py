@@ -104,14 +104,14 @@ def _assert_impl(
         display_type (AssertionDisplay): Human readable name for a basic assertion
         assert_id (str): Unique id for the basic assertion
     """
-    filename = cast(str, loc_info.get("filename", ""))
+    filename = cast(str, loc_info.get("file", ""))
     classname = cast(str, loc_info.get("class", ""))
     tracker_entry = get_tracker_entry(assert_tracker, assert_id, filename, classname)
 
     # Always grab the filename and classname captured when the tracker_entry was established
     # This provides the consistency needed between instrumentation-time and runtime
     if filename != tracker_entry.filename:
-        loc_info["filename"] = tracker_entry.filename
+        loc_info["file"] = tracker_entry.filename
 
     if classname != tracker_entry.classname:
         loc_info["class"] = tracker_entry.classname
@@ -360,7 +360,7 @@ def assert_raw(
     loc_info = cast(
         Dict[str, Union[str, int]],
         {
-            "filename": loc_filename,
+            "file": loc_filename,
             "function": loc_function,
             "class": loc_class,
             "begin_line": loc_begin_line,

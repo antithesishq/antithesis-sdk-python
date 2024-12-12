@@ -23,14 +23,14 @@ def test_location_to_json(location_example):
     loc_info = json.dumps(location_example)
     decoded_loc_info = json.loads(loc_info)
 
-    assert 'filename' in decoded_loc_info
+    assert 'file' in decoded_loc_info
     assert 'function' in decoded_loc_info
     assert 'class' in decoded_loc_info
     assert 'begin_line' in decoded_loc_info
     assert 'begin_column' in decoded_loc_info
 
-    decoded_filename = decoded_loc_info['filename']
-    assert  decoded_filename == __file__
+    decoded_file = decoded_loc_info['file']
+    assert  decoded_file == __file__
 
     assert decoded_loc_info['function'] == 'location_example'
     assert decoded_loc_info['class'] == ''
@@ -55,14 +55,14 @@ def test_location_has_class(location_with_class_example):
     loc_info = json.dumps(location_with_class_example)
     decoded_loc_info = json.loads(loc_info)
 
-    assert 'filename' in decoded_loc_info
+    assert 'file' in decoded_loc_info
     assert 'function' in decoded_loc_info
     assert 'class' in decoded_loc_info
     assert 'begin_line' in decoded_loc_info
     assert 'begin_column' in decoded_loc_info
 
-    decoded_filename = decoded_loc_info['filename']
-    assert  decoded_filename == __file__
+    decoded_file = decoded_loc_info['file']
+    assert  decoded_file == __file__
 
     assert decoded_loc_info['function'] == 'get_frame_info'
     assert decoded_loc_info['class'] == 'SomeClass'

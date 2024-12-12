@@ -9,6 +9,8 @@ let
     format = "pyproject";
     src = ./.;
     propagatedBuildInputs = with python312.pkgs; [
+      wheel
+      build
       setuptools
       cython
       cffi

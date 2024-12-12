@@ -31,14 +31,14 @@ def _get_location_info(frame_info: Optional[FrameInfo]) -> Dict[str, Union[str, 
     if frame_info is None:
         print("LocInfo not available")
         return {
-            "filename": "",
+            "file": "",
             "function": "",
             "class": "",
             "begin_line": 0,
             "begin_column": 0,
         }
     return {
-        "filename": frame_info.filename,
+        "file": frame_info.filename,
         "function": frame_info.function,
         "class": _get_class_name(frame_info.frame),
         "begin_line": frame_info.lineno,
