@@ -3,12 +3,12 @@
 let
   sdk_version = (builtins.fromTOML(builtins.readFile( ./pyproject.toml))).project.version;
   sdk = with pkgs;
-  python39.pkgs.buildPythonPackage {
+  python312.pkgs.buildPythonPackage {
     pname = "antithesis-sdk-python";
     version = sdk_version;
     format = "pyproject";
     src = ./.;
-    propagatedBuildInputs = with python39.pkgs; [
+    propagatedBuildInputs = with python312.pkgs; [
       wheel
       build
       setuptools
@@ -16,7 +16,7 @@ let
       cffi
     ];
   };
-  sdk_with_docs = pkgs.python39.withPackages (ps: [
+  sdk_with_docs = pkgs.python312.withPackages (ps: [
       sdk
       ps.pdoc
     ]);
