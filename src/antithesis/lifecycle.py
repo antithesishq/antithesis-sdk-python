@@ -4,7 +4,7 @@ reached. Both functions take the parameter `details`: Optional
 additional information provided by the user to add context for
 assertion failures. 
 The information that is logged will appear in the logs section 
-of a [triage report](https://antithesis.com/docs/reports/triage/). 
+of a [triage report](https://antithesis.com/docs/reports/). 
 Normally the values passed to `details` are evaluated at runtime.
 """
 
@@ -26,7 +26,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     """
     the_dict = {"status": "complete", "details": details}
     wrapped_setup = {"antithesis_setup": the_dict}
-    dispatch_output(json.dumps(wrapped_setup, indent=2))
+    dispatch_output(json.dumps(wrapped_setup))
 
 
 def send_event(event_name: str, details: Mapping[str, Any]) -> None:
@@ -40,4 +40,4 @@ def send_event(event_name: str, details: Mapping[str, Any]) -> None:
             associated with the event
     """
     wrapped_event = {event_name: details}
-    dispatch_output(json.dumps(wrapped_event, indent=2))
+    dispatch_output(json.dumps(wrapped_event))

@@ -169,4 +169,4 @@ def _version_message() -> str:
         "protocol_version": ANTITHESIS_PROTOCOL_VERSION,
     }
     wrapped_version = {"antithesis_sdk": version_info}
-    return json.dumps(wrapped_version, indent=2)
+    return json.dumps(wrapped_version)

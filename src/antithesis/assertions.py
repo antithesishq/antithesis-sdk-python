@@ -24,7 +24,7 @@ but they can be quite useful even outside Antithesis.
 Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
 property per unique `message` and this test property will be named "\\<message\\>" in
-the [triage report](https://antithesis.com/docs/reports/triage/). Different
+the [triage report](https://antithesis.com/docs/reports/). Different
 assertions in different parts of the code should have a different `message`, but
 the same assertion should always have the same `message` even if it is moved to
 a different file.
@@ -32,7 +32,7 @@ a different file.
 Each function also takes a parameter called `details`, which is a key-value map of
 optional additional information provided by the user to add context for assertion
 failures. The information logged will appear in the 
-[triage report](https://antithesis.com/docs/reports/triage/), under
+[triage report](https://antithesis.com/docs/reports/), under
 the details section of the corresponding property. Normally the values passed to
 `details` are evaluated at runtime.
 
@@ -73,7 +73,7 @@ def _emit_assert(assert_info: AssertInfo) -> None:
     """
 
     wrapped_assert = {"antithesis_assert": assert_info.to_dict()}
-    dispatch_output(json.dumps(wrapped_assert, indent=2))
+    dispatch_output(json.dumps(wrapped_assert))
 
 
 # pylint: disable=too-many-arguments
@@ -255,7 +255,6 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
     “Antithesis SDK: Reachablity assertions” group.
 
     Args:
-        condition (bool): Indicates if the assertion is true
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
@@ -286,7 +285,6 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
     “Antithesis SDK: Reachablity assertions” group.
 
     Args:
-        condition (bool): Indicates if the assertion is true
         message (str): The unique message associated with the assertion
         details (Mapping[str, Any]): Named details associated with the assertion
     """
@@ -471,16 +469,25 @@ def _process_json_catalog(file_path: str):
             idx = idx + 1
             try:
                 the_dict = json.loads(line)
+                the_details = the_dict.get('details', {})
+                the_condition = the_dict.get('condition', False)
+                the_message = the_dict.get('message', '')
+                the_location_info = the_dict.get('location_info', {'file': '', 'class': '', 'function': '', 'begin_line': -1, 'begin_column': -1})
+                the_hit = the_dict.get('hit', False)
+                the_must_hit = the_dict.get('must_hit', True)
+                the_assert_type = the_dict.get('assert_type', '')
+                the_display_type = the_dict.get('display_type', '')
+                the_id = the_dict.get('id', '')
                 _assert_impl(
-                    the_dict["condition"],
-                    the_dict["message"],
-                    the_dict["details"],
-                    the_dict["location_info"],
-                    the_dict["hit"],
-                    the_dict["must_hit"],
-                    the_dict["assert_type"],
-                    the_dict["display_type"],
-                    the_dict["id"],
+                    the_condition,
+                    the_message,
+                    the_details,
+                    the_location_info,
+                    the_hit,
+                    the_must_hit,
+                    the_assert_type,
+                    the_display_type,
+                    the_id,
                 )
             except json.JSONDecodeError:
                 print("Unable to parse as JSON:")
