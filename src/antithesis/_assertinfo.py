@@ -1,11 +1,11 @@
-""" Basic Assertion Information
+"""Basic Assertion Information
 
 This module contains classes used to contain
 the details for basic assertions.
 
 """
 
-#from enum import StrEnum
+# from enum import StrEnum
 from enum import Enum
 from typing import Any, Mapping, Union, Dict
 
@@ -39,7 +39,7 @@ class AssertionDisplay(str, Enum):
             the_assert_type = AssertType.SOMETIMES
         elif self == AssertionDisplay.REACHABLE:
             the_assert_type = AssertType.REACHABILITY
-        else: # AssertionDisplay.UNREACHABLE
+        else:  # AssertionDisplay.UNREACHABLE
             the_assert_type = AssertType.REACHABILITY
         return the_assert_type
 

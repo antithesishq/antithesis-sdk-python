@@ -54,6 +54,17 @@ def random_choice(things: List[Any]) -> Any:
 
 
 class AntithesisRandom(random.Random):
+    """This class can be used as a drop-in replacement for
+    `random https://docs.python.org/3/library/random.html`.
+
+    ```
+    from antithesis.random import AntithesisRandom
+
+    random = AntithesisRandom()
+    print(random.choice([1, 2, 3])) # returns 1, 2 or 3
+    ```
+    """
+
     def random(self) -> float:
         return float(get_random()) / (2**64 - 1)
 
