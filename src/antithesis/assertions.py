@@ -336,7 +336,7 @@ def assert_raw(
     of the `hit` parameter to false.
 
     Please refer to the general Antithesis documentation regarding the use of the
-    [Fallback SDK]("https://antithesis.com/docs/using_antithesis/sdk/fallback/assert.html")
+    [Fallback SDK](https://antithesis.com/docs/using_antithesis/sdk/fallback/)
     for additional information.
 
     Args:

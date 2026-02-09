@@ -18,7 +18,7 @@ def setup_complete(details: Mapping[str, Any]) -> None:
     Call this function when your system and workload are fully
     initialized. After this function is called, Antithesis will
     take a snapshot of your system and begin
-    [injecting faults](https://antithesis.com/docs/applications/reliability/fault_injection/).
+    [injecting faults](https://antithesis.com/docs/environment/fault_injection/).
 
     Args:
         details (Mapping[str, Any]): Additional details that are
