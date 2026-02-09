@@ -1,10 +1,10 @@
-""" This module contains functions that inform the Antithesis
+"""This module contains functions that inform the Antithesis
 environment that particular test phases or milestones have been
 reached. Both functions take the parameter `details`: Optional
 additional information provided by the user to add context for
-assertion failures. 
-The information that is logged will appear in the logs section 
-of a [triage report](https://antithesis.com/docs/reports/). 
+assertion failures.
+The information that is logged will appear in the logs section
+of a [triage report](https://antithesis.com/docs/reports/).
 Normally the values passed to `details` are evaluated at runtime.
 """
 

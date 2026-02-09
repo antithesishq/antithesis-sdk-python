@@ -1,4 +1,4 @@
-""" Source Code Metadata
+"""Source Code Metadata
 
 This module provides a dictionary to contain
 source code metadata for assertion callers.

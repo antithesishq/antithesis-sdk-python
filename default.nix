@@ -24,6 +24,17 @@ let
       ln -s ${./src/antithesis} antithesis_sdk
       ${sdk_with_docs}/bin/python -m pdoc -d google --no-show-source -o $out -n antithesis
     '';
+  sdk_with_tests = pkgs.python312.withPackages (ps: [
+      sdk
+      ps.pytest
+    ]);
+  tests = pkgs.runCommand "run_tests" {} ''
+      cp -r ${./.} source
+      chmod -R +w source
+      cd source
+      ${sdk_with_tests}/bin/pytest
+      touch $out
+    '';
 in {
-    inherit sdk docs;
+    inherit sdk docs tests;
   }

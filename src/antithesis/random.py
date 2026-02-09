@@ -16,7 +16,9 @@ These functions are also safe to call outside the Antithesis
 environment, where they will fall back on values from `random.getrandbits()`.
 """
 
-from typing import List, Any
+import random
+from typing import Any, List
+
 from antithesis._internal import dispatch_random
 
 
@@ -66,3 +68,36 @@ def random_choice(things: List[Any]) -> Any:
         val = 0 - val
     idx = val % lx
     return things[idx]
+
+
+class AntithesisRandom(random.Random):
+    """This class can be used as a drop-in replacement for
+    `random https://docs.python.org/3/library/random.html`.
+
+    ```
+    from antithesis.random import AntithesisRandom
+
+    random = AntithesisRandom()
+    print(random.choice([1, 2, 3])) # returns 1, 2 or 3
+    ```
+    """
+
+    def random(self) -> float:
+        return float(get_random()) / (2**64 - 1)
+
+    def getrandbits(self, k: int) -> int:
+        result = 0
+        bits_needed = k
+        while bits_needed > 0:
+            word = get_random() & 0xFFFFFFFFFFFFFFFF
+            result = (result << 64) | word
+            bits_needed -= 64
+        # Trim bits to a power-of-two boundary
+        return result & ((1 << k) - 1)
+
+    def _notimplemented(self, *args, **kwds):
+        raise NotImplementedError(
+            "AntithesisRandom state is controlled by the Antithesis environment."
+        )
+
+    getstate = setstate = _notimplemented

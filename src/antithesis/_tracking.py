@@ -1,4 +1,4 @@
-""" Basic Assertion Tracking
+"""Basic Assertion Tracking
 This module provides a class to track
 assertion usage, including pass/fail counts,
 catalog entries and some assertion

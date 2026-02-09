@@ -5,11 +5,11 @@
     * reachable
     * unreachable
 
-This module allows you to define 
-[properties](https://antithesis.com/docs/using_antithesis/properties/) 
+This module allows you to define
+[properties](https://antithesis.com/docs/using_antithesis/properties/)
 about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
 It's part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
-which enables Python applications to integrate with the 
+which enables Python applications to integrate with the
 [Antithesis platform](https://antithesis.com/).
 
 These functions are no-ops with minimal performance overhead when called outside of
@@ -17,8 +17,8 @@ the Antithesis environment. However, if the environment variable `ANTITHESIS_SDK
 is set, these functions will log to the file pointed to by that variable using a structured
 JSON format defined [here](https://antithesis.com/docs/using_antithesis/sdk/fallback/).
 This allows you to make use of the Antithesis assertions package in your regular testing,
-or even in production. In particular, very few assertions frameworks offer a convenient way to 
-define [Sometimes assertions](https://antithesis.com/docs/best_practices/sometimes_assertions/), 
+or even in production. In particular, very few assertions frameworks offer a convenient way to
+define [Sometimes assertions](https://antithesis.com/docs/best_practices/sometimes_assertions/),
 but they can be quite useful even outside Antithesis.
 
 Each function in this package takes a parameter called `message`, which is a human
@@ -31,7 +31,7 @@ a different file.
 
 Each function also takes a parameter called `details`, which is a key-value map of
 optional additional information provided by the user to add context for assertion
-failures. The information logged will appear in the 
+failures. The information logged will appear in the
 [triage report](https://antithesis.com/docs/reports/), under
 the details section of the corresponding property. Normally the values passed to
 `details` are evaluated at runtime.
@@ -469,15 +469,24 @@ def _process_json_catalog(file_path: str):
             idx = idx + 1
             try:
                 the_dict = json.loads(line)
-                the_details = the_dict.get('details', {})
-                the_condition = the_dict.get('condition', False)
-                the_message = the_dict.get('message', '')
-                the_location_info = the_dict.get('location_info', {'file': '', 'class': '', 'function': '', 'begin_line': -1, 'begin_column': -1})
-                the_hit = the_dict.get('hit', False)
-                the_must_hit = the_dict.get('must_hit', True)
-                the_assert_type = the_dict.get('assert_type', '')
-                the_display_type = the_dict.get('display_type', '')
-                the_id = the_dict.get('id', '')
+                the_details = the_dict.get("details", {})
+                the_condition = the_dict.get("condition", False)
+                the_message = the_dict.get("message", "")
+                the_location_info = the_dict.get(
+                    "location_info",
+                    {
+                        "file": "",
+                        "class": "",
+                        "function": "",
+                        "begin_line": -1,
+                        "begin_column": -1,
+                    },
+                )
+                the_hit = the_dict.get("hit", False)
+                the_must_hit = the_dict.get("must_hit", True)
+                the_assert_type = the_dict.get("assert_type", "")
+                the_display_type = the_dict.get("display_type", "")
+                the_id = the_dict.get("id", "")
                 _assert_impl(
                     the_condition,
                     the_message,

@@ -3,13 +3,15 @@ from inspect import stack
 
 import pytest
 from antithesis._location import _get_location_info
-from antithesis._assertinfo import AssertInfo, AssertionDisplay 
+from antithesis._assertinfo import AssertInfo, AssertionDisplay
+
 
 @pytest.fixture
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]
     return _get_location_info(this_frame)
+
 
 @pytest.fixture
 def details_example():
@@ -21,6 +23,7 @@ def details_example():
         "verified": False,
     }
     return details
+
 
 def test_assertion_info_to_json(location_example, details_example):
 
@@ -46,40 +49,40 @@ def test_assertion_info_to_json(location_example, details_example):
         condition_value,
         assert_id_value,
         loc_info_value,
-        details_value
+        details_value,
     )
 
     json_assert_info = json.dumps(assert_info.to_dict())
     decoded_assert_info = json.loads(json_assert_info)
 
-    assert 'condition' in decoded_assert_info
-    assert 'must_hit' in decoded_assert_info
-    assert 'hit' in decoded_assert_info
-    assert 'id' in decoded_assert_info
-    assert 'message' in decoded_assert_info
-    assert 'display_type' in decoded_assert_info
-    assert 'assert_type' in decoded_assert_info
-    assert 'location' in decoded_assert_info
-    assert 'details' in decoded_assert_info
+    assert "condition" in decoded_assert_info
+    assert "must_hit" in decoded_assert_info
+    assert "hit" in decoded_assert_info
+    assert "id" in decoded_assert_info
+    assert "message" in decoded_assert_info
+    assert "display_type" in decoded_assert_info
+    assert "assert_type" in decoded_assert_info
+    assert "location" in decoded_assert_info
+    assert "details" in decoded_assert_info
 
-    assert decoded_assert_info['condition'] == condition_value
-    assert decoded_assert_info['must_hit'] == must_hit_value
-    assert decoded_assert_info['hit'] == hit_value
-    assert decoded_assert_info['id'] == assert_id_value
-    assert decoded_assert_info['message'] == message_value
-    assert decoded_assert_info['display_type'] == assertion_display_value
-    assert decoded_assert_info['assert_type'] == assert_type_value
+    assert decoded_assert_info["condition"] == condition_value
+    assert decoded_assert_info["must_hit"] == must_hit_value
+    assert decoded_assert_info["hit"] == hit_value
+    assert decoded_assert_info["id"] == assert_id_value
+    assert decoded_assert_info["message"] == message_value
+    assert decoded_assert_info["display_type"] == assertion_display_value
+    assert decoded_assert_info["assert_type"] == assert_type_value
 
-    decoded_loc_value = decoded_assert_info['location']
-    decoded_details_value = decoded_assert_info['details']
-  
-    for k,v in location_example.items():
+    decoded_loc_value = decoded_assert_info["location"]
+    decoded_details_value = decoded_assert_info["details"]
+
+    for k, v in location_example.items():
         assert k in decoded_loc_value
         decoded_val = decoded_loc_value.get(k)
         assert not decoded_val is None
         assert decoded_val == v
 
-    for k,v in details_example.items():
+    for k, v in details_example.items():
         assert k in decoded_details_value
         decoded_val = decoded_details_value.get(k)
         assert not decoded_val is None

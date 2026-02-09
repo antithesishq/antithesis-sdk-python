@@ -1,7 +1,7 @@
 """Internal
 The internal module contains handlers for voidstar,
 local output, and no-op along with the fallback
-mechanism for choosing and initializing the 
+mechanism for choosing and initializing the
 active handler
 """
 
