@@ -60,7 +60,7 @@ _WAS_HIT = True  # Assertion was reached at runtime
 _MUST_BE_HIT = True  # Assertion must be reached at least once
 _OPTIONALLY_HIT = False  # Assertion may or may not be reachable
 _ASSERTING_TRUE = True  # Assertion condition should be True
-_ASSERTING_FALSE = True  # Assertion condition should be False
+_ASSERTING_FALSE = False  # Assertion condition should be False
 _MAX_EXCERPT_WIDTH = 40  # Maximum length of an excerpt used fo error reporting
 
 
