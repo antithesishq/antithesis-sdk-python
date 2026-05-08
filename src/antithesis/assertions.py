@@ -6,8 +6,8 @@
     * unreachable
 
 This module allows you to define 
-[properties](https://antithesis.com/docs/using_antithesis/properties/) 
-about your program or [test template](https://antithesis.com/docs/getting_started/first_test/).
+[properties](https://antithesis.com/docs/properties_assertions/properties/) 
+about your program or [test template](https://antithesis.com/docs/test_templates/first_test/).
 It's part of the [Antithesis Python SDK](https://antithesis.com/docs/using_antithesis/sdk/python/),
 which enables Python applications to integrate with the 
 [Antithesis platform](https://antithesis.com/).

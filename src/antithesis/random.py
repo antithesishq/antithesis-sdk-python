@@ -8,7 +8,7 @@ for the Antithesis platform to control the history of your program's
 execution, and also makes it harder for Antithesis to explore your
 program efficiently . Instead, you should call a function from the
 random package every time your program or
-[test template](https://antithesis.com/docs/getting_started/first_test/)
+[test template](https://antithesis.com/docs/test_templates/first_test/)
 needs to make a decision, at the moment that you need to make the
 decision.
 
