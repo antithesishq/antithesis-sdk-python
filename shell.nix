@@ -6,7 +6,6 @@ pkgs.mkShell {
     (pkgs.python312.withPackages (ps: with ps; [
       # black
       build
-      cffi
       mypy
       pdoc
       # pylint

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-08-28
+
+Remove small modulo bias from `random_choice`.
+
+When used in local debug mode, the output file (`ANTITHESIS_SDK_LOCAL_OUTPUT`) will no longer be truncated at initialization.
+
+Fixed emission of non-ASCII messages.
+
+Free-threading Python interpreters without the GIL are now supported.
+
+The native library bridge uses `ctypes` instead of `cffi`. The SDK now has no runtime dependencies.
+
 ## 0.2.0 - 2026-02-17
 
 Add `AntithesisRandom`, a drop-in replacement for `random.Random` that uses Antithesis-driven randomness. This lets you pass an `AntithesisRandom` instance anywhere a `random.Random` is expected, giving Antithesis control over the random choices your code makes.

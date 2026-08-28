@@ -1,6 +1,6 @@
 [project]
 name = "antithesis"
-version = "0.2.0"
+version = "0.3.0"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -17,9 +17,7 @@ classifiers = [
   "Topic :: Software Development :: Testing",
 ]
 keywords = ["antithesis", "sdk", "autonomous", "testing"]
-dependencies = [
-  "cffi>=1.16.0",
-]
+dependencies = []
 
 [project.urls]
 homepage = "https://antithesis.com/"

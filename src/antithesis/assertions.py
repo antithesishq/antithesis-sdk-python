@@ -44,6 +44,7 @@ import inspect
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from antithesis._internal import (
@@ -133,12 +134,10 @@ def _assert_impl(
         return
 
     if cond:
-        tracker_entry.inc_passes()
-        if tracker_entry.passes == 1:
+        if tracker_entry.inc_passes() == 1:
             _emit_assert(assert_info)
     else:
-        tracker_entry.inc_fails()
-        if tracker_entry.fails == 1:
+        if tracker_entry.inc_fails() == 1:
             _emit_assert(assert_info)
 
 
@@ -162,7 +161,7 @@ def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
 
     Args:
         condition (bool): Indicates if the assertion is true
-        message (str): The unique message associated with the assertion
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = inspect.stack()
@@ -195,7 +194,7 @@ def always_or_unreachable(
 
     Args:
         condition (bool): Indicates if the assertion is true
-        message (str): The unique message associated with the assertion
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = inspect.stack()
@@ -225,7 +224,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
 
     Args:
         condition (bool): Indicates if the assertion is true
-        message (str): The unique message associated with the assertion
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = inspect.stack()
@@ -255,7 +254,7 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
     “Antithesis SDK: Reachablity assertions” group.
 
     Args:
-        message (str): The unique message associated with the assertion
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = inspect.stack()
@@ -285,7 +284,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
     “Antithesis SDK: Reachablity assertions” group.
 
     Args:
-        message (str): The unique message associated with the assertion
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
     all_frames = inspect.stack()
@@ -398,10 +397,14 @@ def _get_module_list(file_path: str) -> list[str]:
     an app/service - and that catalog will be registered with
     the fuzzer.
     """
-    with open(file_path, "r", encoding="utf-8") as f:
-        json_text = f.read()
-        mod_list = json.loads(json_text)
-        return mod_list["module_list"]
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            mod_list = json.loads(f.read())
+        module_list = mod_list["module_list"]
+        return module_list if isinstance(module_list, list) else []
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        print("[STATUS]", json.dumps({'antithesis_warning': {'message': f"Antithesis: ignoring unreadable module list {file_path!r}: {e}"}}), file=sys.stderr)
+        return []
 
 
 def _get_grade(module_list: list[str]) -> float:
@@ -500,6 +503,64 @@ def _process_json_catalog(file_path: str):
                 print(f"[{idx}] {excerpt!r}")
 
 
+def _recorded_instrumentation_module() -> Optional[str]:
+    try:
+        from antithesis._internal.coverage import get_instrumentation_module
+
+        return get_instrumentation_module()
+    except Exception:
+        return None
+
+
+def _marker_module_from_caller() -> Optional[str]:
+    """The module named by the `# antithesis-module:` marker of the nearest frame
+    outside the antithesis package -- i.e. the code that imported the SDK. Read
+    statically from that module's file, so it works even though that module is still
+    mid-import (its own module-level marker global would not be set yet)."""
+    try:
+        from antithesis._internal.coverage import resolve_module_from_marker
+    except Exception:
+        return None
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))  # .../antithesis
+    frame = sys._getframe(1)
+    while frame is not None:
+        filename = frame.f_code.co_filename
+        try:
+            outside = bool(filename) and not os.path.abspath(filename).startswith(pkg_dir)
+        except OSError:
+            outside = False
+        if outside:
+            module = resolve_module_from_marker(filename)
+            if module is not None:
+                return module
+        frame = frame.f_back
+    return None
+
+
+def _select_instrumentation_folder(from_path: str) -> Optional[str]:
+    """Locate this program's instrumentation subdir (which holds its
+    `assertion_catalog.json`)."""
+    module = _recorded_instrumentation_module()
+    if module is not None:
+        catalog = os.path.join(from_path, module, f"{ASSERTION_CATALOG_NAME}.json")
+        if os.path.isfile(catalog):
+            return module
+        return None  # identity known but its catalog isn't here -> nothing to load
+
+    # No recorded identity: prefer the importing module's marker if its catalog is
+    # present, else fall back to the single-subdir default.
+    marker = _marker_module_from_caller()
+    if marker is not None and os.path.isfile(
+        os.path.join(from_path, marker, f"{ASSERTION_CATALOG_NAME}.json")
+    ):
+        return marker
+
+    # No recorded identity and no usable marker: fall back to the importability
+    # "vote" (`_get_instrumentation_folder`, unchanged from the main branch) so a
+    # marker-less image resolves exactly as it does today -- a clean migration path.
+    return _get_instrumentation_folder(from_path)
+
+
 # ----------------------------------------------------------------------
 # Evaluate once - on load
 # -------------------------------------------------------
@@ -507,13 +568,26 @@ _CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
     cat_path = Path(_CATALOG)
     if cat_path.is_dir():
-        instrumentation_folder = _get_instrumentation_folder(_CATALOG)
+        instrumentation_folder = _select_instrumentation_folder(_CATALOG)
         if instrumentation_folder is not None:
             instrumentation_path = os.path.join(_CATALOG, instrumentation_folder)
             json_catalog_path = os.path.join(
                 instrumentation_path, f"{ASSERTION_CATALOG_NAME}.json"
             )
-            _process_json_catalog(json_catalog_path)
+            # A coverage-only build (assertion cataloging disabled) has a sym table
+            # but no catalog
+            if os.path.isfile(json_catalog_path):
+                _process_json_catalog(json_catalog_path)
+
+            # Coverage/instrumentation activation (no-op if already active). If activated
+            # here, coverage will only be partial and will not be aware of code that has
+            # already run. For best results, use the `python -m antithesis` runner
+            try:
+                from antithesis._internal import coverage
+
+                coverage.activate_module(instrumentation_folder)
+            except Exception:
+                pass
     else:
         PROBLEM_TEXT = "must refer to an accessible directory"
         print(f"Environment variable {ASSERTION_CATALOG_ENV_VAR!r} {PROBLEM_TEXT}")

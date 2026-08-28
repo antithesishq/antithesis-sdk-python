@@ -13,6 +13,7 @@ Attributes:
 
 """
 
+import threading
 from typing import Dict
 
 
@@ -40,14 +41,21 @@ class TrackerInfo:
         self._classname = classname
         self._passes = 0
         self._fails = 0
+        self._lock = threading.Lock()
 
-    def inc_passes(self):
-        """Increments the total number of passed assertions encountered"""
-        self._passes = self._passes + 1
+    def inc_passes(self) -> int:
+        """Increments the total number of passed assertions encountered.
+        Returns the incremented count; the increment-and-read is atomic."""
+        with self._lock:
+            self._passes = self._passes + 1
+            return self._passes
 
-    def inc_fails(self):
-        """Increments the total number of failed assertions encountered"""
-        self._fails = self._fails + 1
+    def inc_fails(self) -> int:
+        """Increments the total number of failed assertions encountered.
+        Returns the incremented count; the increment-and-read is atomic."""
+        with self._lock:
+            self._fails = self._fails + 1
+            return self._fails
 
     @property
     def filename(self) -> str:
@@ -92,6 +100,7 @@ def get_tracker_entry(
     """
     entry = tracker.get(assert_id)
     if entry is None:
-        entry = TrackerInfo(filename, classname)
-        tracker[assert_id] = entry
+        # setdefault, not assignment: two threads racing the first call for
+        # an id must agree on one entry.
+        entry = tracker.setdefault(assert_id, TrackerInfo(filename, classname))
     return entry

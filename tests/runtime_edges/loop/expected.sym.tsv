@@ -1,0 +1,10 @@
+# language = Python
+# instrumentor = antithesis-python-instrumentor
+# module = python-fd200c0202b8
+file	function	begin_line	begin_column	end_line	end_column	address
+program.py	<module> (method entry)	1	1	1	1	1
+program.py	total (method entry)	4	1	4	1	2
+program.py	total (branch fall-through)	6	14	6	22	3
+program.py	total (branch jump)	6	14	6	22	4
+program.py	<module> (branch fall-through)	11	4	11	26	5
+program.py	<module> (branch jump)	11	4	11	26	6

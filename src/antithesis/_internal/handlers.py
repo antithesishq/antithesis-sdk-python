@@ -6,14 +6,13 @@ and No-Op handlers.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from io import TextIOWrapper
+import ctypes
+from io import FileIO
 import json
 import os
 import random
 import sys
 from typing import Optional
-
-import cffi  # type: ignore[import-untyped]
 
 from .sdk_constants import (
     LOCAL_OUTPUT_ENV_VAR,
@@ -59,7 +58,7 @@ class LocalHandler(Handler):
     var: ANTITHESIS_SDK_LOCAL_OUTPUT)
     """
 
-    def __init__(self, filename: str, file: TextIOWrapper):
+    def __init__(self, filename: str, file: FileIO):
         abs_path = os.path.abspath(filename)
         print(f'Assertion output will be sent to: "{abs_path}"\n')
         self.file = file
@@ -70,16 +69,16 @@ class LocalHandler(Handler):
         if filename is None:
             return None
         try:
+            # Unbuffered binary append so that concurrent writers do not trample
+            # each other and each line is a single, self-contained syscall
             # pylint: disable-next=consider-using-with
-            file = open(filename, "w", encoding="utf-8")
+            file = open(filename, "ab", buffering=0)
         except IOError:
             return None
         return LocalHandler(filename, file)
 
     def output(self, value: str) -> None:
-        self.file.write(value)
-        self.file.write("\n")
-        self.file.flush()
+        self.file.write(value.encode("utf-8") + b"\n")
 
     def random(self) -> int:
         return random.getrandbits(64)
@@ -109,13 +108,32 @@ class NoopHandler(Handler):
         return False
 
 
-_CDEF_VOIDSTAR = """\
-uint64_t fuzz_get_random();
-void fuzz_json_data(const char* message, size_t length);
-void fuzz_flush();
-size_t init_coverage_module(size_t edge_count, const char* symbol_file_name);
-bool notify_coverage(size_t edge_plus_module);
-"""
+def _load_voidstar(path):
+    """Symbols the loaded library lacks (a pre-lease build without the v2
+    coverage entry points) are simply left untyped; accessing them raises
+    AttributeError, which is how coverage negotiates the ABI version."""
+    lib = ctypes.CDLL(path)
+
+    def fx(name, argtypes, restype=None):
+        try:
+            f = getattr(lib, name)
+        except AttributeError:
+            return
+        f.argtypes = argtypes
+        f.restype = restype
+
+    fx("fuzz_get_random", [], ctypes.c_uint64)
+    fx("fuzz_json_data", [ctypes.c_char_p, ctypes.c_size_t])
+    fx("fuzz_flush", [])
+    fx("init_coverage_module", [ctypes.c_size_t, ctypes.c_char_p], ctypes.c_size_t)
+    fx("notify_coverage", [ctypes.c_size_t], ctypes.c_bool)
+    fx(
+        "notify_coverage_v2",
+        [ctypes.c_size_t, ctypes.c_uint64],
+        ctypes.c_uint64,
+    )
+    fx("coverage_lease_generation_addr", [], ctypes.POINTER(ctypes.c_uint64))
+    return lib
 
 
 class VoidstarHandler(Handler):
@@ -125,11 +143,8 @@ class VoidstarHandler(Handler):
     """
 
     def __init__(self):
-        self._ffi = cffi.FFI()
-        self._ffi.cdef(_CDEF_VOIDSTAR)
-        self._lib = None
         try:
-            self._lib = self._ffi.dlopen(_VOIDSTAR_PATH)
+            self._lib = _load_voidstar(_VOIDSTAR_PATH)
         except OSError:
             self._lib = None
 
@@ -141,7 +156,8 @@ class VoidstarHandler(Handler):
         return vsh
 
     def output(self, value: str) -> None:
-        self._lib.fuzz_json_data(value.encode("ascii"), len(value))
+        encoded = value.encode("utf-8")
+        self._lib.fuzz_json_data(encoded, len(encoded))
         self._lib.fuzz_flush()
 
     def random(self) -> int:

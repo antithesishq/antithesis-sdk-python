@@ -1,0 +1,12 @@
+# language = Python
+# instrumentor = antithesis-python-instrumentor
+# module = python-4aeb5932377a
+file	function	begin_line	begin_column	end_line	end_column	address
+program.py	<module> (method entry)	1	1	1	1	1
+program.py	classify (method entry)	4	1	4	1	2
+program.py	classify (branch fall-through)	5	8	5	24	3
+program.py	classify (branch jump)	5	8	5	24	4
+program.py	classify (branch fall-through)	7	8	7	29	5
+program.py	classify (branch jump)	7	8	7	29	6
+program.py	<module> (branch fall-through)	12	4	12	26	7
+program.py	<module> (branch jump)	12	4	12	26	8

@@ -39,6 +39,7 @@ def get_random() -> int:
     """
     return dispatch_random()
 
+_u64_max = 2 ** 64 - 1
 
 def random_choice(things: List[Any]) -> Any:
     """Provides a randomly chosen item from a list of options.
@@ -63,9 +64,10 @@ def random_choice(things: List[Any]) -> Any:
         return None
     if lx == 1:
         return things[0]
+    ceiling = (_u64_max // lx) * lx
     val = get_random()
-    if val < 0:
-        val = 0 - val
+    while val >= ceiling:
+        val = get_random()
     idx = val % lx
     return things[idx]
 

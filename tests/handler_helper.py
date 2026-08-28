@@ -8,9 +8,10 @@ import antithesis._internal
 TESTING_OUTPUT_ENV_VAR: str = "ANTITHESIS_SDK_LOCAL_OUTPUT"
 
 @pytest.fixture
-def setup_local_handler(monkeypatch):
-    monkeypatch.setenv(TESTING_OUTPUT_ENV_VAR, 'test_out.json')
-    assert os.getenv(TESTING_OUTPUT_ENV_VAR) == 'test_out.json'
+def setup_local_handler(monkeypatch, tmp_path):
+    out_file = str(tmp_path / "test_out.json")
+    monkeypatch.setenv(TESTING_OUTPUT_ENV_VAR, out_file)
+    assert os.getenv(TESTING_OUTPUT_ENV_VAR) == out_file
     importlib.reload(antithesis._internal)
 
 @pytest.fixture
