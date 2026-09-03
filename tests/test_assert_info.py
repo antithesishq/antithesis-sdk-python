@@ -9,7 +9,7 @@ from antithesis._assertinfo import AssertInfo, AssertionDisplay
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]
-    return _get_location_info(this_frame)
+    return _get_location_info(this_frame.frame)
 
 @pytest.fixture
 def details_example():

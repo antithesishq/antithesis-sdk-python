@@ -40,7 +40,7 @@ the details section of the corresponding property. Normally the values passed to
 
 from typing import Any, Mapping, Union, Dict, Optional, cast
 from importlib.util import find_spec
-import inspect
+from inspect import currentframe
 
 import json
 import os
@@ -141,17 +141,42 @@ def _assert_impl(
             _emit_assert(assert_info)
 
 
-def _make_key(message: str, _loc_info: Dict[str, Union[str, int]]) -> str:
-    """Composes a tracker lookup key.
-
-    Args:
-        message (str): The text for a basic assertion
-        _loc_info (Dict[str, Union[str, int]]): The location infor for a basic assertion
-
-    Returns:
-        str: The tracker lookup key
+def _hit_assert(
+    condition: bool,
+    message: str,
+    details: Mapping[str, Any],
+    display_type: AssertionDisplay,
+    must_hit: bool,
+) -> None:
+    """Common runtime path for the public assertion functions. The tracker is
+    keyed by `message`. When the tracker shows this assertion should not emit,
+    just bump the counter.
     """
-    return message
+    entry = assert_tracker.get(message)
+    if entry is not None and (entry.passes if condition else entry.fails) > 0:
+        if condition:
+            entry.inc_passes()
+        else:
+            entry.inc_fails()
+        return
+
+    # Two frames up from here is the caller of the public assertion function.
+    # currentframe() can return None on implementations without frame support;
+    # _get_location_info(None) emits an empty location.
+    frame = currentframe()
+    caller = frame.f_back.f_back if frame is not None and frame.f_back is not None else None
+    location_info = _get_location_info(caller)
+    _assert_impl(
+        condition,
+        message,
+        details,
+        location_info,
+        _WAS_HIT,
+        must_hit,
+        display_type.assert_type(),
+        display_type,
+        message,
+    )
 
 
 def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
@@ -164,23 +189,7 @@ def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = inspect.stack()
-    this_frame = all_frames[1]
-    location_info = _get_location_info(this_frame)
-    assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS
-    assert_type = display_type.assert_type()
-    _assert_impl(
-        condition,
-        message,
-        details,
-        location_info,
-        _WAS_HIT,
-        _MUST_BE_HIT,
-        assert_type,
-        display_type,
-        assert_id,
-    )
+    _hit_assert(condition, message, details, AssertionDisplay.ALWAYS, _MUST_BE_HIT)
 
 
 def always_or_unreachable(
@@ -197,22 +206,8 @@ def always_or_unreachable(
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = inspect.stack()
-    this_frame = all_frames[1]
-    location_info = _get_location_info(this_frame)
-    assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.ALWAYS_OR_UNREACHABLE
-    assert_type = display_type.assert_type()
-    _assert_impl(
-        condition,
-        message,
-        details,
-        location_info,
-        _WAS_HIT,
-        _OPTIONALLY_HIT,
-        assert_type,
-        display_type,
-        assert_id,
+    _hit_assert(
+        condition, message, details, AssertionDisplay.ALWAYS_OR_UNREACHABLE, _OPTIONALLY_HIT
     )
 
 
@@ -227,23 +222,7 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = inspect.stack()
-    this_frame = all_frames[1]
-    location_info = _get_location_info(this_frame)
-    assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.SOMETIMES
-    assert_type = display_type.assert_type()
-    _assert_impl(
-        condition,
-        message,
-        details,
-        location_info,
-        _WAS_HIT,
-        _MUST_BE_HIT,
-        assert_type,
-        display_type,
-        assert_id,
-    )
+    _hit_assert(condition, message, details, AssertionDisplay.SOMETIMES, _MUST_BE_HIT)
 
 
 def reachable(message: str, details: Mapping[str, Any]) -> None:
@@ -257,22 +236,8 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = inspect.stack()
-    this_frame = all_frames[1]
-    location_info = _get_location_info(this_frame)
-    assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.REACHABLE
-    assert_type = display_type.assert_type()
-    _assert_impl(
-        _ASSERTING_TRUE,
-        message,
-        details,
-        location_info,
-        _WAS_HIT,
-        _MUST_BE_HIT,
-        assert_type,
-        display_type,
-        assert_id,
+    _hit_assert(
+        _ASSERTING_TRUE, message, details, AssertionDisplay.REACHABLE, _MUST_BE_HIT
     )
 
 
@@ -287,22 +252,8 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
         details (Mapping[str, Any]): Named details associated with the assertion
     """
-    all_frames = inspect.stack()
-    this_frame = all_frames[1]
-    location_info = _get_location_info(this_frame)
-    assert_id = _make_key(message, location_info)
-    display_type = AssertionDisplay.UNREACHABLE
-    assert_type = display_type.assert_type()
-    _assert_impl(
-        _ASSERTING_FALSE,
-        message,
-        details,
-        location_info,
-        _WAS_HIT,
-        _OPTIONALLY_HIT,
-        assert_type,
-        display_type,
-        assert_id,
+    _hit_assert(
+        _ASSERTING_FALSE, message, details, AssertionDisplay.UNREACHABLE, _OPTIONALLY_HIT
     )
 
 
@@ -522,7 +473,7 @@ def _marker_module_from_caller() -> Optional[str]:
     except Exception:
         return None
     pkg_dir = os.path.dirname(os.path.abspath(__file__))  # .../antithesis
-    frame = sys._getframe(1)
+    frame = currentframe()  # own frame is inside pkg_dir, so the loop skips it
     while frame is not None:
         filename = frame.f_code.co_filename
         try:

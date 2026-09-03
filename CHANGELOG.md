@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 - 2026-09-03
+
+Use `inspect.currentframe()` instead of `inspect.stack()` when annotating assertions for improved efficiency
+
+Forgo dispatching `init_coverage_module` FFI call when an incompatible symbol table is encountered
+
 ## 0.3.0 - 2026-08-28
 
 Remove small modulo bias from `random_choice`.

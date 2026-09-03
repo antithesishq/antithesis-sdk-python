@@ -65,19 +65,11 @@ class FakeHandler:
 
 
 def _write_sym(path, entries):
-    """Write a .sym.tsv from (relpath, line) entries using whole-line spans.
-
-    Addresses are 1-based, so entry i owns addresses 2i+1 (F) 
-    and 2i+2 (T). Returns the edge_count (the highest address)."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    addr = 0
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(_SYM_HEADER + "\n")
-        for rel, line in entries:
-            for desc in ("branch fall-through", "branch jump"):
-                addr += 1
-                f.write(f"{rel}\tfn ({desc})\t{line}\t1\t{line}\t200\t{addr}\n")
-    return addr
+    return _write_sym_tsv(
+        path,
+        "antithesis-python-instrumentor",
+        "python-deadbeefcafe",
+        [[rel, line, qual] for [rel, line] in entries for qual in ("fn (branch fall-through)", "fn (branch jump)")])
 
 
 def _write_edges(path, rel, entries=(), branch_edges=()):
@@ -100,6 +92,19 @@ def _write_edges(path, rel, entries=(), branch_edges=()):
                 f.write(f"{rel}\tfn ({desc})\t{line}\t1\t{line}\t200\t{addr}\n")
                 idx[(arc, line)] = addr
     return idx
+
+def _write_sym_tsv(path, instrumentor, module, edges):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    addr = 0
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("# language = Python\n")
+        f.write(f"# instrumentor = {instrumentor}\n")
+        f.write("# module = {module}\n")
+        f.write(_SYM_HEADER + "\n")
+        for rel, line, qual in edges:
+            addr += 1
+            f.write(f"{rel}\t{qual}\t{line}\t1\t{line}\t200\t{addr}\n")
+    return addr
 
 
 def _run(source, filename):
@@ -449,6 +454,52 @@ def test_empty_symtable_is_inert(tmp_path):
     assert coverage.activate(sym, handler=FakeHandler(lib)) is None
     assert coverage._ACTIVE is None
     assert lib.inits == []
+
+def test_legacy_symtable_generates_no_coverage(tmp_path, monkeypatch):
+    """A symbol table from a pre-`coverage_edges` instrumentor must be inert."""
+    import antithesis._internal as _internal
+
+    mon = sys.monitoring
+    module = "python-f8e113a1a65e"
+    sym = str(tmp_path / f"{module}.sym.tsv")
+    high_addr = _write_sym_tsv(path=sym, instrumentor="/usr/bin/instrumentor", module=module, edges=[("legacy.py", 2, "f"), ("legacy.py", 3, "f"), ("legacy.py", 4, "f")])
+    assert high_addr == 3
+
+    # The rows reach the label classifier and are rejected there
+    assert [row[1] for row in coverage._iter_sym_rows(sym)] == ["f", "f", "f"]
+
+    # _warn() dispatches an `antithesis_error`
+    dispatched = []
+    monkeypatch.setattr(_internal, "dispatch_output", dispatched.append, raising=False)
+
+    assert mon.get_tool(mon.COVERAGE_ID) is None, "COVERAGE_ID held before activation"
+
+    lib = RecordingLib()
+    assert coverage.activate(sym, handler=FakeHandler(lib)) is None
+    assert coverage._ACTIVE is None
+
+    # No module announced, despite addresses running to 3.
+    assert lib.inits == []
+
+    # No monitoring tool claimed and no events armed means sys.monitoring is not active and the application incurred no runtime cost
+    assert mon.get_tool(mon.COVERAGE_ID) is None
+    assert mon.get_events(mon.COVERAGE_ID) == 0
+
+    # Running the code the table describes notifies nothing.
+    ns = _run(
+        """
+        def f(n):
+            if n > 0:
+                return 'pos'
+            return 'neg'
+        """,
+        "/deploy/app/legacy.py",
+    )
+    ns["f"](5)
+    ns["f"](-5)
+    assert lib.notifies == []
+
+    assert dispatched == []
 
 
 def test_activate_module_without_symtable_records_identity_only(tmp_path, monkeypatch):

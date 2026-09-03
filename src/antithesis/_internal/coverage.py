@@ -176,7 +176,8 @@ class _Resolver:
                 grouped.setdefault((relpath, span), {})["T"] = addr_i
             elif func.endswith(_FALLTHROUGH_SUFFIX):
                 grouped.setdefault((relpath, span), {})["F"] = addr_i
-            # else: unrecognized label -> ignored (still counted via max_addr)
+            else:
+                return 0 # unrecognized label -> the file was corrupted or is otherwise not a valid edge table
         for (relpath, span), arcs in grouped.items():
             self._by_relpath.setdefault(relpath, []).append(
                 (span, arcs.get("F"), arcs.get("T"))
