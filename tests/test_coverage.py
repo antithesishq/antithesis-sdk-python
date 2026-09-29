@@ -8,7 +8,7 @@ import pytest
 
 from antithesis._internal import coverage
 
-_SYM_HEADER = "file\tfunction\tbegin_line\tbegin_column\tend_line\tend_column\taddress"
+_SYM_HEADER = "file\tclass\tfunction\tedge_kind\tbegin_line\tbegin_column\tend_line\tend_column\taddress"
 _SDK_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 
 pytestmark = pytest.mark.skipif(
@@ -64,47 +64,47 @@ class FakeHandler:
         return True
 
 
-def _write_sym(path, entries):
-    return _write_sym_tsv(
-        path,
-        "antithesis-python-instrumentor",
-        "python-deadbeefcafe",
-        [[rel, line, qual] for [rel, line] in entries for qual in ("fn (branch fall-through)", "fn (branch jump)")])
-
-
-def _write_edges(path, rel, entries=(), branch_edges=()):
-    """Write a single-file .sym.tsv. `entries` are (line, qualname) method-entry
-    edges (one zero-width row each); `branch_edges` are line numbers (each an
-    F+T pair). Returns an index
-    {('S', line, qual): addr, ('F', line): addr, ('T', line): addr}."""
+def _write_rows(path, rows, header=_SYM_HEADER, instrumentor="antithesis-python-instrumentor 0.0.0",
+                module="python-deadbeefcafe"):
+    """Write a .sym.tsv whose data rows are `rows`, each a tuple in `header`
+    order less the address, which is assigned 1..N in order. Returns N."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    addr = 0
-    idx = {}
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(_SYM_HEADER + "\n")
-        for line, qual in entries:
-            addr += 1
-            f.write(f"{rel}\t{qual} (method entry)\t{line}\t1\t{line}\t1\t{addr}\n")
-            idx[("S", line, qual)] = addr
-        for line in branch_edges:
-            for arc, desc in (("F", "branch fall-through"), ("T", "branch jump")):
-                addr += 1
-                f.write(f"{rel}\tfn ({desc})\t{line}\t1\t{line}\t200\t{addr}\n")
-                idx[(arc, line)] = addr
-    return idx
-
-def _write_sym_tsv(path, instrumentor, module, edges):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    addr = 0
     with open(path, "w", encoding="utf-8") as f:
         f.write("# language = Python\n")
         f.write(f"# instrumentor = {instrumentor}\n")
-        f.write("# module = {module}\n")
-        f.write(_SYM_HEADER + "\n")
-        for rel, line, qual in edges:
-            addr += 1
-            f.write(f"{rel}\t{qual}\t{line}\t1\t{line}\t200\t{addr}\n")
-    return addr
+        f.write(f"# module = {module}\n")
+        f.write(header + "\n")
+        for addr, row in enumerate(rows, start=1):
+            f.write("\t".join(str(v) for v in (*row, addr)) + "\n")
+    return len(rows)
+
+
+def _branch_rows(rel, line):
+    """A branch's fall-through and jump rows, spanning columns 1-200 of `line`."""
+    return [(rel, "", "fn", kind, line, 1, line, 200) for kind in ("fall-through", "jump")]
+
+
+def _write_sym(path, entries):
+    """One branch per (file, line) in `entries`; returns the edge count."""
+    return _write_rows(path, [row for rel, line in entries for row in _branch_rows(rel, line)])
+
+
+def _write_edges(path, rel, entries=(), branch_edges=()):
+    """Write a single-file .sym.tsv. `entries` are (line, class, function)
+    entry edges (one zero-width row each); `branch_edges` are line numbers.
+    Returns an index {('S', line, co_qualname): addr, ('F', line): addr,
+    ('T', line): addr}."""
+    rows = []
+    idx = {}
+    for line, cls, func in entries:
+        rows.append((rel, cls, func, "entry", line, 1, line, 1))
+        idx[("S", line, f"{cls}.{func}" if cls else func)] = len(rows)
+    for line in branch_edges:
+        for arc, row in zip("FT", _branch_rows(rel, line)):
+            rows.append(row)
+            idx[(arc, line)] = len(rows)
+    _write_rows(path, rows)
+    return idx
 
 
 def _run(source, filename):
@@ -290,7 +290,7 @@ def test_unrelated_files_are_not_instrumented(tmp_path):
 def test_entry_edges_cover_entered_functions(tmp_path):
     sym = str(tmp_path / "prog.sym.tsv")
     # Method-entry edges for the module and two functions (no branch edges).
-    idx = _write_edges(sym, "s.py", entries=[(1, "<module>"), (1, "f"), (4, "g")])
+    idx = _write_edges(sym, "s.py", entries=[(1, "", "<module>"), (1, "", "f"), (4, "", "g")])
     lib = RecordingLib()
     resolver = coverage.activate(sym, handler=FakeHandler(lib))
     assert resolver is not None
@@ -316,10 +316,38 @@ def test_entry_edges_cover_entered_functions(tmp_path):
     assert idx[("S", 4, "g")] not in got, "unentered function g should be uncovered"
 
 
+def test_entry_edges_rebuild_qualname_from_class_column(tmp_path):
+    # Columns are resolved by header name, and a method's co_qualname is the
+    # class column joined to the function column.
+    sym = str(tmp_path / "c.sym.tsv")
+    idx = _write_edges(sym, "c.py", entries=[(1, "", "<module>"), (1, "", "C"), (2, "C", "m"), (4, "C", "n")])
+    lib = RecordingLib()
+    resolver = coverage.activate(sym, handler=FakeHandler(lib))
+    assert resolver is not None
+
+    ns = _run(
+        """
+        class C:
+            def m(self):
+                return 1
+            def n(self):
+                return 2
+        """,
+        "/deploy/c.py",
+    )
+    ns["C"]().m()
+    resolver.unregister()
+
+    got = set(lib.notifies)
+    assert idx[("S", 1, "C")] in got, "class body not covered"
+    assert idx[("S", 2, "C.m")] in got, "entered method C.m not covered"
+    assert idx[("S", 4, "C.n")] not in got, "unentered method C.n should be uncovered"
+
+
 def test_entry_and_branch_together(tmp_path):
     sym = str(tmp_path / "h.sym.tsv")
     # Entry edges for the module and f, plus a branch on line 2 (`if n > 0:`).
-    idx = _write_edges(sym, "h.py", entries=[(1, "<module>"), (1, "f")], branch_edges=(2,))
+    idx = _write_edges(sym, "h.py", entries=[(1, "", "<module>"), (1, "", "f")], branch_edges=(2,))
     lib = RecordingLib()
     resolver = coverage.activate(sym, handler=FakeHandler(lib))
     assert resolver is not None
@@ -344,7 +372,7 @@ def test_entry_and_branch_together(tmp_path):
 
 def test_entry_edge_notified_once(tmp_path):
     sym = str(tmp_path / "loop.sym.tsv")
-    idx = _write_edges(sym, "l.py", entries=[(1, "f")])
+    idx = _write_edges(sym, "l.py", entries=[(1, "", "f")])
     lib = RecordingLib()
     resolver = coverage.activate(sym, handler=FakeHandler(lib))
     assert resolver is not None
@@ -374,7 +402,7 @@ class KeepCallingLib(RecordingLib):
 
 def test_entry_edge_reported_every_hit_when_not_retired(tmp_path):
     sym = str(tmp_path / "loop.sym.tsv")
-    idx = _write_edges(sym, "l.py", entries=[(1, "f")])
+    idx = _write_edges(sym, "l.py", entries=[(1, "", "f")])
     lib = KeepCallingLib()
     resolver = coverage.activate(sym, handler=FakeHandler(lib))
     assert resolver is not None
@@ -414,7 +442,7 @@ def test_reification_scope_does_not_notify_entry_edge(tmp_path):
     # co_qualname must keep that reification from marking gen covered -- only a
     # real call to gen counts.
     sym = str(tmp_path / "g.sym.tsv")
-    idx = _write_edges(sym, "g.py", entries=[(1, "gen")])
+    idx = _write_edges(sym, "g.py", entries=[(1, "", "gen")])
     lib = RecordingLib()
     resolver = coverage.activate(sym, handler=FakeHandler(lib))
     assert resolver is not None
@@ -456,17 +484,24 @@ def test_empty_symtable_is_inert(tmp_path):
     assert lib.inits == []
 
 def test_legacy_symtable_generates_no_coverage(tmp_path, monkeypatch):
-    """A symbol table from a pre-`coverage_edges` instrumentor must be inert."""
+    """A symbol table from an instrumentor before the `class` and `edge_kind`
+    columns must be inert."""
     import antithesis._internal as _internal
 
     mon = sys.monitoring
     module = "python-f8e113a1a65e"
     sym = str(tmp_path / f"{module}.sym.tsv")
-    high_addr = _write_sym_tsv(path=sym, instrumentor="/usr/bin/instrumentor", module=module, edges=[("legacy.py", 2, "f"), ("legacy.py", 3, "f"), ("legacy.py", 4, "f")])
+    high_addr = _write_rows(
+        sym,
+        [("legacy.py", "f", line, 1, line, 200) for line in (2, 3, 4)],
+        header="file\tfunction\tbegin_line\tbegin_column\tend_line\tend_column\taddress",
+        instrumentor="/usr/bin/instrumentor",
+        module=module,
+    )
     assert high_addr == 3
 
-    # The rows reach the label classifier and are rejected there
-    assert [row[1] for row in coverage._iter_sym_rows(sym)] == ["f", "f", "f"]
+    # The header lacks the columns this runtime keys on, so no row is read.
+    assert list(coverage._iter_sym_rows(sym)) == []
 
     # _warn() dispatches an `antithesis_error`
     dispatched = []
@@ -550,7 +585,7 @@ def _make_catalog(root, subdirs):
 
 
 def test_catalog_selection_by_recorded_identity(tmp_path):
-    import antithesis.assertions as A
+    from antithesis._internal import catalog_resolve as _resolve
 
     cat = str(tmp_path)
     _make_catalog(cat, ["python-real0001", "python-decoy999"])
@@ -558,21 +593,21 @@ def test_catalog_selection_by_recorded_identity(tmp_path):
     # A recorded identity resolves the exact module unambiguously, even with
     # several subdirs present (no marker-less vote needed).
     coverage._INSTRUMENTATION_MODULE = "python-real0001"
-    assert A._select_instrumentation_folder(cat) == "python-real0001"
+    assert _resolve.select_instrumentation_folder(cat) == "python-real0001"
 
     # Identity naming a module whose catalog isn't present -> None (no fallback).
     coverage._INSTRUMENTATION_MODULE = "python-ghost0000"
-    assert A._select_instrumentation_folder(cat) is None
+    assert _resolve.select_instrumentation_folder(cat) is None
 
 
 def test_catalog_selection_single_subdir_fallback(tmp_path):
-    import antithesis.assertions as A
+    from antithesis._internal import catalog_resolve as _resolve
 
     cat = str(tmp_path)
     _make_catalog(cat, ["python-solo0002"])
     coverage._INSTRUMENTATION_MODULE = None
     # Exactly one subdir and no identity -> unambiguous, use it.
-    assert A._select_instrumentation_folder(cat) == "python-solo0002"
+    assert _resolve.select_instrumentation_folder(cat) == "python-solo0002"
 
 
 def test_sdk_import_fallback_activates_coverage(tmp_path):

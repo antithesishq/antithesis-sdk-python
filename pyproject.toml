@@ -1,6 +1,6 @@
 [project]
 name = "antithesis"
-version = "0.3.1"
+version = "0.4.0"
 description = "Antithesis SDK for Python"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -29,7 +29,7 @@ issues = "https://github.com/antithesishq/antithesis-sdk-python/issues"
 verbose = true
 
 [tool.mypy]
-files = "src/antithesis/*.py"
+files = "src/antithesis"
 disable_error_code = "import-untyped, import-not-found"
 
 [tool.pylint.messages_control]
@@ -41,3 +41,7 @@ pythonpath = ["src", "tests"]
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+# The SDK is fully annotated; the marker lets consumers' type checkers see it.
+[tool.setuptools.package-data]
+antithesis = ["py.typed"]

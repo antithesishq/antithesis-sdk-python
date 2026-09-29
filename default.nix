@@ -1,9 +1,8 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, python3 ? pkgs.python3 }:
 
 let
   sdk_version = (builtins.fromTOML(builtins.readFile( ./pyproject.toml))).project.version;
-  sdk = with pkgs;
-  python3.pkgs.buildPythonPackage {
+  sdk = python3.pkgs.buildPythonPackage {
     pname = "antithesis-sdk-python";
     version = sdk_version;
     format = "pyproject";
@@ -14,7 +13,7 @@ let
       setuptools
     ];
   };
-  sdk_with_docs = pkgs.python3.withPackages (ps: [
+  sdk_with_docs = python3.withPackages (ps: [
       sdk
       ps.pdoc
     ]);
@@ -28,7 +27,7 @@ let
   # SDK version through importlib.metadata), so the test env must carry the
   # built SDK, not just its dependencies.
   check = pkgs.runCommand "antithesis-sdk-python-pytest" {
-      nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ sdk ps.pytest ])) ];
+      nativeBuildInputs = [ (python3.withPackages (ps: [ sdk ps.pytest ])) ];
     } ''
       cp -r ${./.} pkg
       chmod -R u+w pkg

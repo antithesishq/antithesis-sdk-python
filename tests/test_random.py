@@ -12,9 +12,9 @@ def test_random_dist():
         all_vals.add(random_val)
 
 
-def test_random_none():
-    random_item = random_choice([])
-    assert random_item is None
+def test_random_empty_raises():
+    with pytest.raises(IndexError):
+        random_choice([])
 
 
 def test_random_one():

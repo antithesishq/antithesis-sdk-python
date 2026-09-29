@@ -5,6 +5,15 @@
     * reachable
     * unreachable
 
+and for rich assertions, which additionally tell Antithesis the values the
+assertion compared so it can steer toward the ones most likely to flip it:
+    * always_greater_than, always_greater_than_or_equal_to
+    * always_less_than, always_less_than_or_equal_to
+    * sometimes_greater_than, sometimes_greater_than_or_equal_to
+    * sometimes_less_than, sometimes_less_than_or_equal_to
+    * always_some
+    * sometimes_all
+
 This module allows you to define 
 [properties](https://antithesis.com/docs/properties_assertions/properties/) 
 about your program or [test template](https://antithesis.com/docs/test_templates/first_test/).
@@ -19,7 +28,8 @@ JSON format defined [here](https://antithesis.com/docs/using_antithesis/sdk/fall
 This allows you to make use of the Antithesis assertions package in your regular testing,
 or even in production. In particular, very few assertions frameworks offer a convenient way to 
 define [Sometimes assertions](https://antithesis.com/docs/best_practices/sometimes_assertions/), 
-but they can be quite useful even outside Antithesis.
+but they can be quite useful even outside Antithesis. To enumerate the assertions your
+code declares -- including ones a local run never reaches -- see `antithesis.catalog`.
 
 Each function in this package takes a parameter called `message`, which is a human
 readable identifier used to aggregate assertions. Antithesis generates one test
@@ -34,26 +44,33 @@ optional additional information provided by the user to add context for assertio
 failures. The information logged will appear in the 
 [triage report](https://antithesis.com/docs/reports/), under
 the details section of the corresponding property. Normally the values passed to
-`details` are evaluated at runtime.
+`details` are evaluated on every call, but serialized only when emitting.
+Omit `details` or pass `None` for no details; an explicit empty mapping is preserved.
+Other values are wrapped under `value`. If details
+cannot be serialized, the SDK reports `antithesis_error` identifying the assertion
+ID and emits the assertion without details.
 
 """
 
 from typing import Any, Mapping, Union, Dict, Optional, cast
-from importlib.util import find_spec
 from inspect import currentframe
 
 import json
 import os
-import sys
-from pathlib import Path
 
 from antithesis._internal import (
     dispatch_output,
     ASSERTION_CATALOG_ENV_VAR,
     ASSERTION_CATALOG_NAME,
-    COVERAGE_MODULE_LIST,
 )
-from ._assertinfo import AssertInfo, AssertionDisplay
+from ._details import details_object, dispatch_guidance, dispatch_with_details
+from ._assertinfo import AssertInfo, AssertionKind
+from ._guidance import (
+    BOOLEAN,
+    NUMERIC,
+    guidance_info,
+    should_emit_numeric,
+)
 from ._location import _get_location_info
 from ._tracking import assert_tracker, get_tracker_entry
 
@@ -62,7 +79,6 @@ _MUST_BE_HIT = True  # Assertion must be reached at least once
 _OPTIONALLY_HIT = False  # Assertion may or may not be reachable
 _ASSERTING_TRUE = True  # Assertion condition should be True
 _ASSERTING_FALSE = False  # Assertion condition should be False
-_MAX_EXCERPT_WIDTH = 40  # Maximum length of an excerpt used fo error reporting
 
 
 def _emit_assert(assert_info: AssertInfo) -> None:
@@ -74,14 +90,17 @@ def _emit_assert(assert_info: AssertInfo) -> None:
     """
 
     wrapped_assert = {"antithesis_assert": assert_info.to_dict()}
-    dispatch_output(json.dumps(wrapped_assert))
+    dispatch_with_details(
+        wrapped_assert, wrapped_assert["antithesis_assert"], "details",
+        assert_info.assert_id, dispatch_output,
+    )
 
 
 # pylint: disable=too-many-arguments
 def _assert_impl(
     cond: bool,
     message: str,
-    details: Mapping[str, Any],
+    details: Optional[Mapping[str, Any]],
     loc_info: Dict[str, Union[str, int]],
     hit: bool,
     must_hit: bool,
@@ -95,14 +114,14 @@ def _assert_impl(
     Args:
         cond (bool): Runtime condition for the basic assertion
         message (str): Unique message associated with a basic assertion
-        details (Mapping[str, Any]): Named details associated with a basic
+        details (Optional[Mapping[str, Any]]): Named details associated with a basic
             assertion at runtime
         loc_info (Dict[str, Union[str, int]]): Caller information for the basic
             assertion (runtime and catalog)
         hit (bool): True for runtime assertions, False if from an Assertion Catalog
         must_hit (bool): True if assertion must be hit at runtime
         assert_type (AssertType): Logical handling type for a basic assertion
-        display_type (AssertionDisplay): Human readable name for a basic assertion
+        display_type (AssertionKind): Human readable name for a basic assertion
         assert_id (str): Unique id for the basic assertion
     """
     filename = cast(str, loc_info.get("file", ""))
@@ -117,6 +136,11 @@ def _assert_impl(
     if classname != tracker_entry.classname:
         loc_info["class"] = tracker_entry.classname
 
+    if hit:
+        count = tracker_entry.inc_passes() if cond else tracker_entry.inc_fails()
+        if count != 1:
+            return
+
     assert_info = AssertInfo(
         hit,
         must_hit,
@@ -128,24 +152,14 @@ def _assert_impl(
         loc_info,
         details,
     )
-
-    if not hit:
-        _emit_assert(assert_info)
-        return
-
-    if cond:
-        if tracker_entry.inc_passes() == 1:
-            _emit_assert(assert_info)
-    else:
-        if tracker_entry.inc_fails() == 1:
-            _emit_assert(assert_info)
+    _emit_assert(assert_info)
 
 
 def _hit_assert(
     condition: bool,
     message: str,
-    details: Mapping[str, Any],
-    display_type: AssertionDisplay,
+    details: Optional[Mapping[str, Any]],
+    display_type: AssertionKind,
     must_hit: bool,
 ) -> None:
     """Common runtime path for the public assertion functions. The tracker is
@@ -173,13 +187,13 @@ def _hit_assert(
         location_info,
         _WAS_HIT,
         must_hit,
-        display_type.assert_type(),
+        display_type.assert_type,
         display_type,
         message,
     )
 
 
-def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
+def always(condition: bool, message: str, details: Optional[Mapping[str, Any]] = None) -> None:
     """Asserts that `condition` is true every time this function
     is called. This test property will be viewable in the
     “Antithesis SDK: Always” group of your triage report.
@@ -187,13 +201,13 @@ def always(condition: bool, message: str, details: Mapping[str, Any]) -> None:
     Args:
         condition (bool): Indicates if the assertion is true
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
-        details (Mapping[str, Any]): Named details associated with the assertion
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
     """
-    _hit_assert(condition, message, details, AssertionDisplay.ALWAYS, _MUST_BE_HIT)
+    _hit_assert(condition, message, details, AssertionKind.ALWAYS, _MUST_BE_HIT)
 
 
 def always_or_unreachable(
-    condition: bool, message: str, details: Mapping[str, Any]
+    condition: bool, message: str, details: Optional[Mapping[str, Any]] = None
 ) -> None:
     """Asserts that `condition` is true every time this function
     is called. The corresponding test property will pass if the
@@ -204,14 +218,14 @@ def always_or_unreachable(
     Args:
         condition (bool): Indicates if the assertion is true
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
-        details (Mapping[str, Any]): Named details associated with the assertion
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
     """
     _hit_assert(
-        condition, message, details, AssertionDisplay.ALWAYS_OR_UNREACHABLE, _OPTIONALLY_HIT
+        condition, message, details, AssertionKind.ALWAYS_OR_UNREACHABLE, _OPTIONALLY_HIT
     )
 
 
-def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None:
+def sometimes(condition: bool, message: str, details: Optional[Mapping[str, Any]] = None) -> None:
     """Asserts that `condition` is true at least one time that this function
     was called. (If the assertion is never encountered, the test property
     will therefore fail.) This test property will be viewable in the
@@ -220,12 +234,12 @@ def sometimes(condition: bool, message: str, details: Mapping[str, Any]) -> None
     Args:
         condition (bool): Indicates if the assertion is true
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
-        details (Mapping[str, Any]): Named details associated with the assertion
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
     """
-    _hit_assert(condition, message, details, AssertionDisplay.SOMETIMES, _MUST_BE_HIT)
+    _hit_assert(condition, message, details, AssertionKind.SOMETIMES, _MUST_BE_HIT)
 
 
-def reachable(message: str, details: Mapping[str, Any]) -> None:
+def reachable(message: str, details: Optional[Mapping[str, Any]] = None) -> None:
     """Reachable asserts that a line of code is reached at least
     once. The corresponding test property will pass if this function
     is ever called. (If it is never called the test property will
@@ -234,14 +248,14 @@ def reachable(message: str, details: Mapping[str, Any]) -> None:
 
     Args:
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
-        details (Mapping[str, Any]): Named details associated with the assertion
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
     """
     _hit_assert(
-        _ASSERTING_TRUE, message, details, AssertionDisplay.REACHABLE, _MUST_BE_HIT
+        _ASSERTING_TRUE, message, details, AssertionKind.REACHABLE, _MUST_BE_HIT
     )
 
 
-def unreachable(message: str, details: Mapping[str, Any]) -> None:
+def unreachable(message: str, details: Optional[Mapping[str, Any]] = None) -> None:
     """Unreachable asserts that a line of code is never reached.
     The corresponding test property will fail if this function
     is ever called. (If it is never called the test property will
@@ -250,10 +264,10 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
 
     Args:
         message (str): The unique message associated with the assertion. Must be provided as a string literal.
-        details (Mapping[str, Any]): Named details associated with the assertion
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
     """
     _hit_assert(
-        _ASSERTING_FALSE, message, details, AssertionDisplay.UNREACHABLE, _OPTIONALLY_HIT
+        _ASSERTING_FALSE, message, details, AssertionKind.UNREACHABLE, _OPTIONALLY_HIT
     )
 
 
@@ -261,7 +275,7 @@ def unreachable(message: str, details: Mapping[str, Any]) -> None:
 def assert_raw(
     condition: bool,
     message: str,
-    details: Mapping[str, Any],
+    details: Optional[Mapping[str, Any]],
     loc_filename: str,
     loc_function: str,
     loc_class: str,
@@ -272,6 +286,7 @@ def assert_raw(
     assert_type: str,
     display_type: str,
     assert_id: str,
+    guidance_data: Optional[Mapping[str, Any]] = None,
 ):
     """This is a low-level method designed to be used by third-party frameworks.
     Regular users of the assertions module should not call it.
@@ -292,7 +307,7 @@ def assert_raw(
     Args:
         condition (bool): Runtime condition for the basic assertion
         message (str): Unique message associated with a basic assertion
-        details (Mapping[str, Any]): Named details associated with a basic assertion at runtime
+        details (Optional[Mapping[str, Any]]): Named details associated with a basic assertion at runtime
         loc_filename (str): The name of the source file containing the called assertion
         loc_function (str): The name of the function containing the called assertion
         loc_class (str): The name of the class for the function containing the called assertion
@@ -303,7 +318,13 @@ def assert_raw(
         assert_type (str): Logical handling type for a basic assertion
         display_type (str): Human readable name for a basic assertion
         assert_id (str): Unique id for the basic assertion
+        guidance_data (Optional[Mapping[str, Any]]): The guidance values of a rich
+            assertion, merged over `details` exactly as the rich assertions merge
+            them. Leave unset for a plain assertion.
     """
+
+    if hit and guidance_data is not None:
+        details = _merge_guidance(details, guidance_data)
 
     loc_info = cast(
         Dict[str, Union[str, int]],
@@ -329,187 +350,373 @@ def assert_raw(
     )
 
 
-def _get_subdirs(dir_path: str) -> list[str]:
-    if not os.path.isdir(dir_path):
-        return []
-    walk_results = next(os.walk(dir_path))
-    return walk_results[1]  # directories at index=1, files at index=2
+def _merge_guidance(
+    details: Optional[Mapping[str, Any]], guidance_data: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """Caller details with the guidance values merged over them."""
+    if details is None:
+        return guidance_data
+    merged = dict(details_object(details) or {})
+    merged.update(guidance_data)
+    return merged
 
 
-def _get_module_list(file_path: str) -> list[str]:
-    """Reads and parses the JSON representation of a module
-    list.  This list will be used to identify what python
-    modules were processed at instrumentation time.
-    In cases where there are more than one python app/service
-    that can be run in a container, these apps/services will
-    each have separate assertion catalogs. Knowing what python
-    modules should be importable at runtime, will determine
-    which specific assertion catalog should be associated with
-    an app/service - and that catalog will be registered with
-    the fuzzer.
-    """
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            mod_list = json.loads(f.read())
-        module_list = mod_list["module_list"]
-        return module_list if isinstance(module_list, list) else []
-    except (OSError, ValueError, KeyError, TypeError) as e:
-        print("[STATUS]", json.dumps({'antithesis_warning': {'message': f"Antithesis: ignoring unreadable module list {file_path!r}: {e}"}}), file=sys.stderr)
-        return []
+# pylint: disable=too-many-arguments
+def _rich_numeric(
+    condition: bool,
+    left: Any,
+    right: Any,
+    message: str,
+    details: Optional[Mapping[str, Any]],
+    display_type: AssertionKind,
+    maximize: bool,
+) -> None:
+    # Two frames up from here is the caller of the public assertion function,
+    # as in _hit_assert.
+    frame = currentframe()
+    caller = frame.f_back.f_back if frame is not None and frame.f_back is not None else None
+    loc_info = _get_location_info(caller)
+    guidance_data = {"left": left, "right": right}
 
+    # _assert_impl normalizes loc_info against the tracker entry for this id,
+    # so the guidance below reports the same location the assertion does.
+    _assert_impl(
+        condition,
+        message,
+        _merge_guidance(details, guidance_data),
+        loc_info,
+        _WAS_HIT,
+        _MUST_BE_HIT,
+        display_type.assert_type,
+        display_type,
+        message,
+    )
 
-def _get_grade(module_list: list[str]) -> float:
-    """Count the number of modules that can be loaded
-    from this list, and return the overall grade of loadable
-    modules found in the range 0.0 to 1.0
-    """
-    num_modules = float(len(module_list))
-    num_found = 0
-    for module_name in module_list:
-        this_spec = find_spec(module_name)
-        if this_spec is not None:
-            num_found = num_found + 1
-    return num_found / num_modules
-
-
-def _get_instrumentation_folder(from_path: str) -> Optional[str]:
-    """Determines which subfolder of `from_path` contains the
-    assertion catalog that corresponds to the app/service
-    in this python instance that is using the Antithesis SDK.
-    In cases where there are more than one python app/service
-    that can be run in a container, these apps/services will
-    each have separate assertion catalogs.  All such apps
-    and services that are instrumented will write instrumentation
-    generated files to a subdirectory named `python-xxxxxxxxxxxx`
-    where `xxxxxxxxxxxx` represents the generated module name
-    used in the `xxxxxxxxxxxx.sym.tsv` file.  Each of these
-    subdirectories will have a common parent directory, which
-    is provided at instrumentation time, using the `-p` command
-    line argument.  In addition to the symbols file, each
-    subdirectory will contain `assertion_catalog.py` and
-    `assertion_catalog.json`.  The `assertion_catalog.py` file
-    provides a more readable version of the catalog data, than
-    is found in the `assertion_catalog.json` file.  It is
-    safer to process the assertion catalog by read/parse json
-    than it is to import/exec the `assertion_catalog.py` file.
-    """
-    subdirs = _get_subdirs(from_path)
-    lx = len(subdirs)
-    if lx < 2:
-        return subdirs[0] if lx == 1 else None
-
-    selected_grade = 0.0
-    selected_subdir = None
-    for subdir in subdirs:
-        py_module_list_path = os.path.join(
-            from_path, subdir, f"{COVERAGE_MODULE_LIST}.json"
+    if should_emit_numeric(message, maximize, left, right, dispatch_output):
+        _emit_guidance(
+            guidance_info(NUMERIC, message, message, loc_info, maximize, _WAS_HIT, guidance_data),
+            message,
         )
-        module_list = _get_module_list(py_module_list_path)
-        if len(module_list) > 0:
-            print(f"Nonempty module list found in {py_module_list_path!r}")
-            print(f"{module_list = }")
-            grade = _get_grade(module_list)
-            if grade > selected_grade:
-                selected_grade = grade
-                selected_subdir = subdir
-    return selected_subdir
 
 
-def _process_json_catalog(file_path: str):
-    with open(file_path, "r", encoding="utf-8") as f:
-        idx = 0
-        lines = f.readlines()
-        for line in lines:
-            idx = idx + 1
-            try:
-                the_dict = json.loads(line)
-                the_details = the_dict.get('details', {})
-                the_condition = the_dict.get('condition', False)
-                the_message = the_dict.get('message', '')
-                the_location_info = the_dict.get('location_info', {'file': '', 'class': '', 'function': '', 'begin_line': -1, 'begin_column': -1})
-                the_hit = the_dict.get('hit', False)
-                the_must_hit = the_dict.get('must_hit', True)
-                the_assert_type = the_dict.get('assert_type', '')
-                the_display_type = the_dict.get('display_type', '')
-                the_id = the_dict.get('id', '')
-                _assert_impl(
-                    the_condition,
-                    the_message,
-                    the_details,
-                    the_location_info,
-                    the_hit,
-                    the_must_hit,
-                    the_assert_type,
-                    the_display_type,
-                    the_id,
-                )
-            except json.JSONDecodeError:
-                print("Unable to parse as JSON:")
-                lx = len(line)
-                excerpt = (
-                    line
-                    if lx < _MAX_EXCERPT_WIDTH
-                    else line[0:_MAX_EXCERPT_WIDTH] + "..."
-                )
-                print(f"[{idx}] {excerpt!r}")
+def _rich_boolean(
+    condition: bool,
+    named_bools: Mapping[str, bool],
+    message: str,
+    details: Optional[Mapping[str, Any]],
+    display_type: AssertionKind,
+    maximize: bool,
+) -> None:
+    frame = currentframe()
+    caller = frame.f_back.f_back if frame is not None and frame.f_back is not None else None
+    loc_info = _get_location_info(caller)
+    guidance_data = dict(named_bools)
+
+    _assert_impl(
+        condition,
+        message,
+        _merge_guidance(details, guidance_data),
+        loc_info,
+        _WAS_HIT,
+        _MUST_BE_HIT,
+        display_type.assert_type,
+        display_type,
+        message,
+    )
+
+    _emit_guidance(
+        guidance_info(BOOLEAN, message, message, loc_info, maximize, _WAS_HIT, guidance_data),
+        message,
+    )
 
 
-def _recorded_instrumentation_module() -> Optional[str]:
-    try:
-        from antithesis._internal.coverage import get_instrumentation_module
+def always_greater_than(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left > right` every time this function is called.
 
-        return get_instrumentation_module()
-    except Exception:
-        return None
+    Equivalent to `always(left > right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left > right, left, right, message, details,
+        AssertionKind.ALWAYS, False,
+    )
+
+def always_greater_than_or_equal_to(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left >= right` every time this function is called.
+
+    Equivalent to `always(left >= right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left >= right, left, right, message, details,
+        AssertionKind.ALWAYS, False,
+    )
+
+def always_less_than(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left < right` every time this function is called.
+
+    Equivalent to `always(left < right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left < right, left, right, message, details,
+        AssertionKind.ALWAYS, True,
+    )
+
+def always_less_than_or_equal_to(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left <= right` every time this function is called.
+
+    Equivalent to `always(left <= right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left <= right, left, right, message, details,
+        AssertionKind.ALWAYS, True,
+    )
+
+def sometimes_greater_than(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left > right` at least one time that this function is called.
+
+    Equivalent to `sometimes(left > right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left > right, left, right, message, details,
+        AssertionKind.SOMETIMES, True,
+    )
+
+def sometimes_greater_than_or_equal_to(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left >= right` at least one time that this function is called.
+
+    Equivalent to `sometimes(left >= right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left >= right, left, right, message, details,
+        AssertionKind.SOMETIMES, True,
+    )
+
+def sometimes_less_than(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left < right` at least one time that this function is called.
+
+    Equivalent to `sometimes(left < right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left < right, left, right, message, details,
+        AssertionKind.SOMETIMES, False,
+    )
+
+def sometimes_less_than_or_equal_to(
+    left: Any, right: Any, message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that `left <= right` at least one time that this function is called.
+
+    Equivalent to `sometimes(left <= right, ...)`, except that Antithesis is also
+    told the values compared, so it can steer toward the ones most likely to
+    flip the assertion. `left` and `right` are merged into `details`.
+
+    Args:
+        left (Any): The left operand of the comparison
+        right (Any): The right operand of the comparison
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_numeric(
+        left <= right, left, right, message, details,
+        AssertionKind.SOMETIMES, False,
+    )
+
+def always_some(
+    named_bools: Mapping[str, bool], message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that at least one of `named_bools` is true every time this
+    function is called.
+
+    Equivalent to `always(any(named_bools.values()), ...)`, except that
+    Antithesis is also told each proposition separately. `named_bools` is
+    merged into `details`.
+
+    Args:
+        named_bools (Mapping[str, bool]): The propositions, keyed by name
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_boolean(
+        any(named_bools.values()), named_bools, message, details,
+        AssertionKind.ALWAYS, False,
+    )
 
 
-def _marker_module_from_caller() -> Optional[str]:
-    """The module named by the `# antithesis-module:` marker of the nearest frame
-    outside the antithesis package -- i.e. the code that imported the SDK. Read
-    statically from that module's file, so it works even though that module is still
-    mid-import (its own module-level marker global would not be set yet)."""
-    try:
-        from antithesis._internal.coverage import resolve_module_from_marker
-    except Exception:
-        return None
-    pkg_dir = os.path.dirname(os.path.abspath(__file__))  # .../antithesis
-    frame = currentframe()  # own frame is inside pkg_dir, so the loop skips it
-    while frame is not None:
-        filename = frame.f_code.co_filename
-        try:
-            outside = bool(filename) and not os.path.abspath(filename).startswith(pkg_dir)
-        except OSError:
-            outside = False
-        if outside:
-            module = resolve_module_from_marker(filename)
-            if module is not None:
-                return module
-        frame = frame.f_back
-    return None
+def sometimes_all(
+    named_bools: Mapping[str, bool], message: str, details: Optional[Mapping[str, Any]] = None
+) -> None:
+    """Asserts that every one of `named_bools` is true at least one time that
+    this function is called.
+
+    Equivalent to `sometimes(all(named_bools.values()), ...)`, except that
+    Antithesis is also told each proposition separately. `named_bools` is
+    merged into `details`.
+
+    Args:
+        named_bools (Mapping[str, bool]): The propositions, keyed by name
+        message (str): The unique message associated with the assertion. Must be provided as a string literal.
+        details (Optional[Mapping[str, Any]]): Named details associated with the assertion
+    """
+    _rich_boolean(
+        all(named_bools.values()), named_bools, message, details,
+        AssertionKind.SOMETIMES, True,
+    )
+
+def _guidance_loc_info(
+    loc_filename: str,
+    loc_function: str,
+    loc_class: str,
+    loc_begin_line: int,
+    loc_begin_column: int,
+) -> Dict[str, Union[str, int]]:
+    return cast(
+        Dict[str, Union[str, int]],
+        {
+            "file": loc_filename,
+            "function": loc_function,
+            "class": loc_class,
+            "begin_line": loc_begin_line,
+            "begin_column": loc_begin_column,
+        },
+    )
 
 
-def _select_instrumentation_folder(from_path: str) -> Optional[str]:
-    """Locate this program's instrumentation subdir (which holds its
-    `assertion_catalog.json`)."""
-    module = _recorded_instrumentation_module()
-    if module is not None:
-        catalog = os.path.join(from_path, module, f"{ASSERTION_CATALOG_NAME}.json")
-        if os.path.isfile(catalog):
-            return module
-        return None  # identity known but its catalog isn't here -> nothing to load
+def _emit_guidance(record: Dict[str, Any], guidance_id: str) -> None:
+    dispatch_guidance({"antithesis_guidance": record}, guidance_id, dispatch_output)
 
-    # No recorded identity: prefer the importing module's marker if its catalog is
-    # present, else fall back to the single-subdir default.
-    marker = _marker_module_from_caller()
-    if marker is not None and os.path.isfile(
-        os.path.join(from_path, marker, f"{ASSERTION_CATALOG_NAME}.json")
-    ):
-        return marker
 
-    # No recorded identity and no usable marker: fall back to the importability
-    # "vote" (`_get_instrumentation_folder`, unchanged from the main branch) so a
-    # marker-less image resolves exactly as it does today -- a clean migration path.
-    return _get_instrumentation_folder(from_path)
+# pylint: disable=too-many-arguments
+def _numeric_guidance_raw(
+    left: Any,
+    right: Any,
+    message: str,
+    maximize: bool,
+    loc_filename: str,
+    loc_function: str,
+    loc_class: str,
+    loc_begin_line: int,
+    loc_begin_column: int,
+    hit: bool,
+    guidance_id: str,
+):
+    guidance_data = None
+    if hit:
+        if not should_emit_numeric(guidance_id, maximize, left, right, dispatch_output):
+            return
+        guidance_data = {"left": left, "right": right}
+
+    _emit_guidance(
+        guidance_info(
+            NUMERIC,
+            guidance_id,
+            message,
+            _guidance_loc_info(
+                loc_filename, loc_function, loc_class, loc_begin_line, loc_begin_column
+            ),
+            maximize,
+            hit,
+            guidance_data,
+        ),
+        guidance_id,
+    )
+
+
+# pylint: disable=too-many-arguments
+def _boolean_guidance_raw(
+    named_bools: Optional[Mapping[str, Any]],
+    message: str,
+    maximize: bool,
+    loc_filename: str,
+    loc_function: str,
+    loc_class: str,
+    loc_begin_line: int,
+    loc_begin_column: int,
+    hit: bool,
+    guidance_id: str,
+):
+    _emit_guidance(
+        guidance_info(
+            BOOLEAN,
+            guidance_id,
+            message,
+            _guidance_loc_info(
+                loc_filename, loc_function, loc_class, loc_begin_line, loc_begin_column
+            ),
+            maximize,
+            hit,
+            named_bools if hit else None,
+        ),
+        guidance_id,
+    )
 
 
 # ----------------------------------------------------------------------
@@ -517,9 +724,13 @@ def _select_instrumentation_folder(from_path: str) -> Optional[str]:
 # -------------------------------------------------------
 _CATALOG = os.getenv(ASSERTION_CATALOG_ENV_VAR)
 if _CATALOG is not None:
-    cat_path = Path(_CATALOG)
-    if cat_path.is_dir():
-        instrumentation_folder = _select_instrumentation_folder(_CATALOG)
+    # Imported here, not at the top: antithesis.catalog imports assert_raw
+    # from this module, so it must load after the definitions above.
+    from antithesis import catalog as _catalog_module
+    from antithesis._internal import catalog_resolve as _catalog_resolve
+
+    if os.path.isdir(_CATALOG):
+        instrumentation_folder = _catalog_resolve.select_instrumentation_folder(_CATALOG)
         if instrumentation_folder is not None:
             instrumentation_path = os.path.join(_CATALOG, instrumentation_folder)
             json_catalog_path = os.path.join(
@@ -528,7 +739,7 @@ if _CATALOG is not None:
             # A coverage-only build (assertion cataloging disabled) has a sym table
             # but no catalog
             if os.path.isfile(json_catalog_path):
-                _process_json_catalog(json_catalog_path)
+                _catalog_module.register(_catalog_module.load(json_catalog_path))
 
             # Coverage/instrumentation activation (no-op if already active). If activated
             # here, coverage will only be partial and will not be aware of code that has
@@ -539,7 +750,10 @@ if _CATALOG is not None:
                 coverage.activate_module(instrumentation_folder)
             except Exception:
                 pass
+    elif os.path.isfile(_CATALOG):
+        # A plain catalog file, e.g. written by `python -m antithesis.catalog`
+        _catalog_module.register(_catalog_module.load(_CATALOG))
     else:
-        PROBLEM_TEXT = "must refer to an accessible directory"
+        PROBLEM_TEXT = "must refer to an accessible directory or file"
         print(f"Environment variable {ASSERTION_CATALOG_ENV_VAR!r} {PROBLEM_TEXT}")
-        print(f"Ignoring it because it is set to {cat_path!r}")
+        print(f"Ignoring it because it is set to {_CATALOG!r}")

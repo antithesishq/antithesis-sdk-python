@@ -14,13 +14,14 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 _Span = Tuple[int, int, int, int]
 
-# `function`-column label descriptors written by the build-side generator
-# (coverage_edges.write_table). Entry edges carry the co_qualname followed by
-# ``(entry)``; branch arcs carry the enclosing-scope name followed by the arc
-# descriptor. Kept in sync with coverage_edges.py.
-_ENTRY_SUFFIX = " (method entry)"
-_FALLTHROUGH_SUFFIX = " (branch fall-through)"
-_JUMP_SUFFIX = " (branch jump)"
+# `edge_kind` column values written by the build-side generator
+# (coverage_edges.write_table): which control-flow edge of its construct a
+# row is. An entry row is keyed by (co_firstlineno, co_qualname), where
+# co_qualname is ``class.function``; a branch's fall-through and jump rows
+# share its span and differ only in kind. Kept in sync with coverage_edges.py.
+_ENTRY = "entry"
+_FALL_THROUGH = "fall-through"
+_JUMP = "jump"
 
 # The instrumentor appends this comment to each instrumented .py so a module's
 # catalog identity travels with its source (copy-invariant), letting us resolve the
@@ -35,24 +36,43 @@ _LEASE_FIELD_MASK = 0xFFFFF
 _LEASE_EPOCH_MASK = 0xFFFFFF
 
 
-def _iter_sym_rows(sym_path: str) -> Iterator[Tuple[str, str, _Span, int]]:
+_SPAN_COLUMNS = ("begin_line", "begin_column", "end_line", "end_column")
+
+
+_COLUMNS = ("file", "class", "function", "edge_kind", "address", *_SPAN_COLUMNS)
+
+
+def _iter_sym_rows(sym_path: str) -> Iterator[Tuple[str, str, str, str, _Span, int]]:
+    """(file, class, function, edge kind, span, address) per data row. Columns
+    are resolved by name from the header row, as the format asks of consumers;
+    a header missing any of them is not a table this runtime can match."""
     try:
         f = open(sym_path, "r", encoding="utf-8")
     except OSError:
         return
     with f:
+        columns = None
         for line in f:
             if line.startswith("#"):
                 continue  # `# key = value` preamble
             parts = line.rstrip("\n").split("\t")
-            if len(parts) != 7 or not parts[6].isdigit():
-                continue  # column header / malformed
+            if columns is None:
+                index = {name: i for i, name in enumerate(parts)}
+                try:
+                    columns = tuple(index[c] for c in _COLUMNS)
+                except KeyError:
+                    return  # not an edge table
+                width = len(parts)
+                continue
+            if len(parts) != width:
+                continue  # malformed
+            file_col, cls_col, func_col, kind_col, addr_col, *span_cols = columns
             try:
-                span = (int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5]))
-                addr = int(parts[6])
+                span = tuple(int(parts[c]) for c in span_cols)
+                addr = int(parts[addr_col])
             except ValueError:
                 continue
-            yield parts[0], parts[1], span, addr
+            yield parts[file_col], parts[cls_col], parts[func_col], parts[kind_col], span, addr
 
 
 def _warn(message: str) -> None:
@@ -164,20 +184,19 @@ class _Resolver:
     def _parse(self, sym_path: str) -> int:
         max_addr = -1
         grouped: Dict[Tuple[str, _Span], Dict[str, int]] = {}
-        for relpath, func, span, addr_i in _iter_sym_rows(sym_path):
+        for relpath, cls, func, kind, span, addr_i in _iter_sym_rows(sym_path):
             if addr_i > max_addr:
                 max_addr = addr_i
-            if func.endswith(_ENTRY_SUFFIX):
-                # Method-entry edge, keyed by (co_firstlineno, co_qualname). The
-                # qualname (label minus the descriptor) is the runtime match key.
-                qual = func[: -len(_ENTRY_SUFFIX)]
+            if kind == _ENTRY:
+                # Method-entry edge, keyed by (co_firstlineno, co_qualname).
+                qual = f"{cls}.{func}" if cls else func
                 self._by_relpath_start.setdefault(relpath, {})[(span[0], qual)] = addr_i
-            elif func.endswith(_JUMP_SUFFIX):
+            elif kind == _JUMP:
                 grouped.setdefault((relpath, span), {})["T"] = addr_i
-            elif func.endswith(_FALLTHROUGH_SUFFIX):
+            elif kind == _FALL_THROUGH:
                 grouped.setdefault((relpath, span), {})["F"] = addr_i
             else:
-                return 0 # unrecognized label -> the file was corrupted or is otherwise not a valid edge table
+                return 0  # unknown edge kind: corrupted, or not a table this runtime can match
         for (relpath, span), arcs in grouped.items():
             self._by_relpath.setdefault(relpath, []).append(
                 (span, arcs.get("F"), arcs.get("T"))

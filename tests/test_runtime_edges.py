@@ -24,12 +24,15 @@ change (`args` are authored by hand and preserved)::
 
 ``-update`` shells out to the instrumentor CLI (``../antithesis-instrumentor``)
 purely as an external build tool -- the SDK never imports it -- so the two
-packages stay decoupled. Normal runs read the committed ``expected.sym.tsv`` and
-touch the instrumentor not at all.
+packages stay decoupled, and pins the table's ``# instrumentor`` version to
+``X.Y.Z`` so the golden survives version bumps (the runtime ignores the
+global). Normal runs read the committed ``expected.sym.tsv`` and touch the
+instrumentor not at all.
 """
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -48,6 +51,9 @@ INSTRUMENTOR_SRC = os.path.abspath(
 INSTRUMENTOR_MAIN = os.path.join(INSTRUMENTOR_SRC, "instrumentor.py")
 
 UPDATE = os.environ.get("UPDATE_RUNTIME_EDGES") == "1"
+
+_INSTRUMENTOR_VERSION_RE = re.compile(r"^# instrumentor = antithesis-python-instrumentor \S+$", re.M)
+_PINNED_INSTRUMENTOR_LINE = "# instrumentor = antithesis-python-instrumentor X.Y.Z"
 
 
 class RecordingLib:
@@ -86,8 +92,11 @@ def _regenerate_sym(program_path, dest_sym):
         raise unittest.SkipTest(f"instrumentor not found at {INSTRUMENTOR_MAIN}")
     with tempfile.TemporaryDirectory() as scan, tempfile.TemporaryDirectory() as out:
         shutil.copy(program_path, os.path.join(scan, "program.py"))
+        # --name keeps the golden's `# name` global stable across regenerations
+        # (the default would be the random temp dir's basename).
+        case = os.path.basename(os.path.dirname(program_path))
         proc = subprocess.run(
-            [sys.executable, INSTRUMENTOR_MAIN, "-p", out, scan],
+            [sys.executable, INSTRUMENTOR_MAIN, "-p", out, "--name", case, scan],
             env={**os.environ, "PYTHONPATH": INSTRUMENTOR_SRC},
             capture_output=True,
             text=True,
@@ -97,7 +106,10 @@ def _regenerate_sym(program_path, dest_sym):
         produced = glob.glob(os.path.join(out, "python-*", "*.sym.tsv"))
         if not produced:
             raise RuntimeError("instrumentor produced no .sym.tsv")
-        shutil.copyfile(produced[0], dest_sym)
+        with open(produced[0], encoding="utf-8") as f:
+            table = f.read()
+        with open(dest_sym, "w", encoding="utf-8") as f:
+            f.write(_INSTRUMENTOR_VERSION_RE.sub(_PINNED_INSTRUMENTOR_LINE, table, count=1))
 
 
 def _run_case(sym_path, program_path, args):

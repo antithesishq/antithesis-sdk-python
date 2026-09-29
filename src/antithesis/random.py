@@ -58,10 +58,13 @@ def random_choice(things: List[Any]) -> Any:
 
     Returns:
         Any: A random item taken from the provided list
+
+    Raises:
+        IndexError: If the list is empty.
     """
     lx = len(things)
     if lx == 0:
-        return None
+        raise IndexError("Cannot choose from an empty sequence")
     if lx == 1:
         return things[0]
     ceiling = (_u64_max // lx) * lx

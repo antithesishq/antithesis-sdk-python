@@ -4,16 +4,6 @@ import pytest
 from antithesis._location import _get_location_info
 
 @pytest.fixture
-def simple_details():
-    return {"a":1, "b":"important value"}
-
-def test_simple(simple_details):
-    want = '{"a": 1, "b": "important value"}'
-    got = json.dumps(simple_details)
-    print("GOT: ", got)
-    assert want == got
-
-@pytest.fixture
 def location_example():
     all_frames = stack()
     this_frame = all_frames[0]

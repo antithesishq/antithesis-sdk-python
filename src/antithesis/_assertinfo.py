@@ -7,7 +7,9 @@ the details for basic assertions.
 
 #from enum import StrEnum
 from enum import Enum
-from typing import Any, Mapping, Union, Dict
+from typing import Any, Mapping, Union, Dict, Optional
+
+from ._details import details_object
 
 
 class AssertType(str, Enum):
@@ -18,8 +20,16 @@ class AssertType(str, Enum):
     REACHABILITY = "reachability"
 
 
-class AssertionDisplay(str, Enum):
-    """Used to provide human readable names for basic assertions"""
+class AssertionKind(str, Enum):
+    """Which assertion function a declaration came from.
+
+    This is the typed form of the ``display_type`` field of serialized
+    assertion events; the enum value is that string, which is also how the
+    triage report labels the property. It is distinct from `AssertType`,
+    the three-way wire-level type, which cannot tell `always` from
+    `always_or_unreachable`, or `reachable` from `unreachable`, without
+    also consulting ``must_hit``.
+    """
 
     ALWAYS = "Always"
     ALWAYS_OR_UNREACHABLE = "AlwaysOrUnreachable"
@@ -27,21 +37,28 @@ class AssertionDisplay(str, Enum):
     REACHABLE = "Reachable"
     UNREACHABLE = "Unreachable"
 
-    def assert_type(self) -> AssertType:
-        """Provides the AssertType for the AssertionDisplay value
+    @property
+    def display_type(self) -> str:
+        """str: The ``display_type`` string serialized events carry for this kind."""
+        return self.value
 
-        Returns:
-            AssertType: The AssertType for the AssertionDisplay value
-        """
-        if self in (AssertionDisplay.ALWAYS, AssertionDisplay.ALWAYS_OR_UNREACHABLE):
-            the_assert_type = AssertType.ALWAYS
-        elif self == AssertionDisplay.SOMETIMES:
-            the_assert_type = AssertType.SOMETIMES
-        elif self == AssertionDisplay.REACHABLE:
-            the_assert_type = AssertType.REACHABILITY
-        else: # AssertionDisplay.UNREACHABLE
-            the_assert_type = AssertType.REACHABILITY
-        return the_assert_type
+    @property
+    def assert_type(self) -> AssertType:
+        """AssertType: The wire-level assertion type for this kind."""
+        if self in (AssertionKind.ALWAYS, AssertionKind.ALWAYS_OR_UNREACHABLE):
+            return AssertType.ALWAYS
+        if self == AssertionKind.SOMETIMES:
+            return AssertType.SOMETIMES
+        return AssertType.REACHABILITY
+
+    @property
+    def must_hit(self) -> bool:
+        """bool: Whether the property fails when the assertion is never reached."""
+        return self in (
+            AssertionKind.ALWAYS,
+            AssertionKind.SOMETIMES,
+            AssertionKind.REACHABLE,
+        )
 
 
 # pylint: disable=too-many-instance-attributes
@@ -74,7 +91,7 @@ class AssertInfo:
         condition: bool,
         assert_id: str,
         loc_info: Dict[str, Union[str, int]],
-        details: Mapping[str, Any],
+        details: Optional[Mapping[str, Any]],
     ) -> None:
         self._hit = hit
         self._must_hit = must_hit
@@ -129,7 +146,7 @@ class AssertInfo:
         return self._loc_info
 
     @property
-    def details(self) -> Mapping[str, Any]:
+    def details(self) -> Optional[Mapping[str, Any]]:
         """Mapping[str, Any]: Named details associated with a basic assertion
         at runtime
         """
@@ -158,6 +175,7 @@ class AssertInfo:
             "display_type": self.display_type,
             "assert_type": self.assert_type,
             "location": self.loc_info,
-            "details": self.details,
         }
+        if self.hit and self.details is not None:
+            the_dict["details"] = details_object(self.details)
         return the_dict
